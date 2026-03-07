@@ -2,7 +2,7 @@
 
 **A local-first AI app builder — use [Ollama](https://ollama.ai), generate apps from chat.**
 
-Competes with [dyad.sh](https://dyad.sh) and [Base44](https://base44.com) with full privacy, multi-provider AI, and zero lock-in.
+Competes with [dyad.sh](https://dyad.sh) and [Base44](https://base44.com) with full privacy, and zero lock-in.
 
 ---
 
