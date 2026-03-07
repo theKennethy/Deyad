@@ -1,54 +1,61 @@
 # Deyad 🤖
 
-**A local AI app builder powered exclusively by [Ollama](https://ollama.ai) models.**
+**A local-first AI app builder — use [Ollama](https://ollama.ai), OpenAI, Anthropic, or Google Gemini to generate apps from chat.**
 
-Like [dyad.sh](https://dyad.sh) but without any cloud dependency — every AI call stays on your machine.
+Competes with [dyad.sh](https://dyad.sh) and [Base44](https://base44.com) with full privacy, multi-provider AI, and zero lock-in.
 
 ---
 
-## Why Deyad for Ollama-Only Users?
+## Why Deyad?
 
-If you're committed to running AI locally with Ollama, Deyad offers several advantages over dyad.sh:
+### 🔒 Privacy First — Local by Default
 
-### 🔒 Privacy First
+- **Ollama** runs 100% on your machine — no cloud, no API keys, works offline
+- Cloud providers (OpenAI, Anthropic, Google) available when you want more powerful models
+- Your code never leaves your machine unless you choose to deploy it
 
-| | Deyad | dyad.sh |
-|---|---|---|
-| **Cloud API calls** | ❌ None — 100% local | Supports cloud providers (OpenAI, Anthropic, etc.) |
-| **API keys required** | ❌ Never | Required when using cloud providers |
-| **Data leaves machine** | ❌ Never | When using cloud providers |
-| **Works offline** | ✅ Fully offline-capable | Local models work offline; cloud models need internet |
+### 🧠 Multi-Provider AI
 
-### ⚡ Ollama-Optimized
+| Provider | Models | Auth |
+|----------|--------|------|
+| 🦙 **Ollama** (local) | Any model you pull (llama3.2, codellama, etc.) | None needed |
+| 🟢 **OpenAI** | GPT-4o, GPT-4o-mini, o1, etc. | API key |
+| 🟠 **Anthropic** | Claude Sonnet 4, Claude 3.5 Haiku, etc. | API key |
+| 🔵 **Google Gemini** | Gemini 2.5 Pro, Gemini 2.5 Flash, etc. | API key |
 
-- **Native Ollama streaming** — Direct integration with Ollama's streaming API for real-time token display
-- **Model auto-discovery** — Automatically detects and lists all models available in your local Ollama instance
-- **Zero configuration** — No API keys, no environment variables, no account setup
-- **Fast local inference** — No network latency to cloud endpoints
+### ⚡ Full Feature Set
 
-### 💰 Cost Savings
-
-- **$0 per token** — No cloud API fees, ever
-- **No usage limits** — Generate as much code as your hardware allows
-- **No rate limiting** — Full speed ahead, limited only by your GPU/CPU
-
-### 🛠️ Built for Local Development
-
-- **Electron desktop app** — Native performance, no browser required
-- **Integrated file management** — View and edit generated files directly in the app
-- **Docker Compose integration** — One-click database setup for full-stack apps
-- **Persistent project storage** — All apps saved locally in your user data directory
+| Feature | Deyad | dyad.sh | Base44 |
+|---------|-------|---------|--------|
+| Local AI (Ollama) | ✅ | ✅ | ❌ |
+| Cloud AI (OpenAI, Anthropic, Google) | ✅ | ✅ | ✅ |
+| Open source | ✅ | ✅ | ❌ |
+| Desktop app | ✅ | ✅ | ❌ |
+| Full-stack (React + Express + MySQL) | ✅ | Supabase | Managed |
+| Git version control | ✅ Auto | Manual | ❌ |
+| Project import | ✅ | ✅ | ❌ |
+| Template library | ✅ | ✅ | ✅ |
+| Export as ZIP | ✅ | ✅ | ❌ |
+| Works offline | ✅ | Partial | ❌ |
+| $0 with local models | ✅ | ✅ | ❌ |
 
 ---
 
 ## Features
 
-- 🦙 **Ollama-only** — no cloud APIs, no keys, complete privacy
+- 🧠 **Multi-provider AI** — Ollama, OpenAI, Anthropic, Google Gemini — switch freely
 - ⚡ **Frontend apps** — React + Vite scaffolded instantly
-- 🗄️ **Full-stack apps** — React + Express + **MySQL** (Docker) + Prisma, one click
-- 💬 **Chat to build** — describe your app, get working code
-- 📁 **File editor** — view and browse generated files in-app
+- 🗄️ **Full-stack apps** — React + Express + MySQL (Docker) + Prisma, one click
+- 💬 **Chat to build** — describe your app, get working code with streaming
+- 📁 **File editor** — view, edit, search generated files in-app
+- 👁 **Live preview** — built-in dev server with iframe preview
 - 🐳 **DB management** — Start/Stop your MySQL container from inside the app
+- 📦 **Export as ZIP** — download your project as an archive
+- ↩️ **Undo / Revert** — revert to before the last AI generation
+- 🔀 **Git auto-commit** — every AI generation is versioned automatically
+- 📂 **Import projects** — bring existing codebases into Deyad
+- 🎨 **Templates** — start from Todo, Dashboard, Landing Page, Chat UI, Blog, E-commerce
+- ⚙️ **Configurable** — Ollama host, default model, API keys all in Settings
 
 ## Stack (full-stack mode)
 
@@ -63,9 +70,10 @@ If you're committed to running AI locally with Ollama, Deyad offers several adva
 
 | Requirement | Why |
 |-------------|-----|
-| [Ollama](https://ollama.ai) running locally | Powers all AI chat |
 | [Node.js ≥ 18](https://nodejs.org) | Run the app |
+| [Ollama](https://ollama.ai) *(or cloud API key)* | Powers AI chat |
 | [Docker](https://docker.com) *(optional)* | Full-stack MySQL support |
+| [Git](https://git-scm.com) *(optional)* | Auto version control |
 
 ## Getting Started
 
@@ -73,20 +81,22 @@ If you're committed to running AI locally with Ollama, Deyad offers several adva
 # 1. Install dependencies
 npm install
 
-# 2. Make sure Ollama is running with at least one model
-ollama pull llama3.2
-
-# 3. Start Deyad
+# 2. Start Deyad
 npm start
+
+# 3. In Settings, choose your AI provider:
+#    - Ollama (local): make sure ollama is running with `ollama pull llama3.2`
+#    - OpenAI/Anthropic/Google: paste your API key
 ```
 
 ## Usage
 
-1. Click **+ New App**
-2. Choose **Frontend Only** (React + Vite) or **Full Stack** (adds MySQL + Express + Prisma)
-3. Chat with your chosen Ollama model to describe what you want to build
-4. Deyad generates the files and writes them to disk
-5. For full-stack apps, click **▶ Start DB** to spin up MySQL via Docker Compose
+1. Click **+ New App** (or 📂 to import an existing project)
+2. Pick a **template** or start blank
+3. Choose **Frontend Only** (React + Vite) or **Full Stack** (adds MySQL + Express + Prisma)
+4. Chat with your chosen AI model to describe what you want to build
+5. Deyad generates the files, writes them to disk, and auto-commits via Git
+6. For full-stack apps, click **▶ Start DB** to spin up MySQL via Docker Compose
 
 ### Full-stack workflow
 
@@ -113,19 +123,6 @@ npm start      # start Electron app
 npm test       # run unit tests (vitest)
 npm run lint   # lint TypeScript files
 ```
-
-## When to Use Deyad vs dyad.sh
-
-| Use Case | Recommendation |
-|----------|----------------|
-| Privacy-critical projects | ✅ **Deyad** — data never leaves your machine |
-| Offline development | ✅ **Deyad** — works without internet |
-| Ollama-exclusive workflow | ✅ **Deyad** — purpose-built for Ollama |
-| Cost-conscious teams | ✅ **Deyad** — zero cloud API costs |
-| Need multiple cloud providers | dyad.sh offers OpenAI, Anthropic, and other integrations |
-| Want both local and cloud options | dyad.sh supports both local and cloud models |
-
-**Bottom line:** If you're an Ollama user who values privacy, cost savings, and offline capability, Deyad is the better choice. It's designed from the ground up for local-first AI development.
 
 ## License
 
