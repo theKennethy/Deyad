@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatPanel from './components/ChatPanel';
 import EditorPanel from './components/EditorPanel';
+import PreviewPanel from './components/PreviewPanel';
 import NewAppModal from './components/NewAppModal';
 
 export interface AppProject {
@@ -12,6 +13,8 @@ export interface AppProject {
   isFullStack: boolean;
 }
 
+type RightTab = 'editor' | 'preview';
+
 export default function App() {
   const [apps, setApps] = useState<AppProject[]>([]);
   const [selectedApp, setSelectedApp] = useState<AppProject | null>(null);
@@ -19,6 +22,7 @@ export default function App() {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [showNewAppModal, setShowNewAppModal] = useState(false);
   const [dbStatus, setDbStatus] = useState<'none' | 'running' | 'stopped'>('none');
+  const [rightTab, setRightTab] = useState<RightTab>('editor');
 
   // Load app list on mount
   useEffect(() => {
@@ -43,6 +47,9 @@ export default function App() {
   const selectApp = useCallback(async (app: AppProject) => {
     setSelectedApp(app);
     setSelectedFile(null);
+    // Always show the file editor when switching apps — the preview iframe always
+    // points to localhost:5173 so it could show a stale/different app's preview.
+    setRightTab('editor');
     const files = await window.deyad.readFiles(app.id);
     setAppFiles(files);
 
@@ -88,12 +95,19 @@ export default function App() {
         dbRootPassword: generatePassword(24),
       });
       await window.deyad.writeFiles(app.id, scaffold);
+    } else {
+      // Write a minimal runnable Vite scaffold so the app can be previewed right away
+      const { generateFrontendScaffold } = await import('./lib/scaffoldGenerator');
+      const scaffold = generateFrontendScaffold({ appName: name, description });
+      await window.deyad.writeFiles(app.id, scaffold);
     }
 
     await selectApp({ ...app });
   };
 
   const handleDeleteApp = async (appId: string) => {
+    // Stop dev server if running before deleting
+    await window.deyad.appDevStop(appId).catch(() => {});
     await window.deyad.deleteApp(appId);
     if (selectedApp?.id === appId) {
       setSelectedApp(null);
@@ -150,14 +164,35 @@ export default function App() {
             onDbToggle={handleDbToggle}
           />
 
-          {/* Right: file editor */}
-          <EditorPanel
-            files={appFiles}
-            selectedFile={selectedFile}
-            onSelectFile={setSelectedFile}
-            onOpenFolder={() => window.deyad.openAppFolder(selectedApp.id)}
-            onFileEdit={handleFileEdit}
-          />
+          {/* Right: file editor + preview tabs */}
+          <div className="right-panel">
+            <div className="right-panel-tabs">
+              <button
+                className={`right-tab ${rightTab === 'editor' ? 'active' : ''}`}
+                onClick={() => setRightTab('editor')}
+              >
+                📁 Files
+              </button>
+              <button
+                className={`right-tab ${rightTab === 'preview' ? 'active' : ''}`}
+                onClick={() => setRightTab('preview')}
+              >
+                👁 Preview
+              </button>
+            </div>
+
+            {rightTab === 'editor' ? (
+              <EditorPanel
+                files={appFiles}
+                selectedFile={selectedFile}
+                onSelectFile={setSelectedFile}
+                onOpenFolder={() => window.deyad.openAppFolder(selectedApp.id)}
+                onFileEdit={handleFileEdit}
+              />
+            ) : (
+              <PreviewPanel app={selectedApp} />
+            )}
+          </div>
         </>
       ) : (
         <div className="empty-state">

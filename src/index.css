@@ -493,6 +493,7 @@ body {
   grid-template-rows: 1fr;
   grid-template-columns: 180px 1fr;
   overflow: hidden;
+  height: 100%;
 }
 
 .file-tree {
@@ -609,6 +610,204 @@ body {
   color: var(--text-muted);
   font-size: 13px;
 }
+
+/* ─── Right Panel (Files / Preview tabs) ─────────────────────────────────── */
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-left: 1px solid var(--border);
+}
+
+.right-panel-tabs {
+  display: flex;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+
+.right-tab {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.right-tab:hover { color: var(--text-primary); }
+.right-tab.active {
+  color: var(--accent-light);
+  border-bottom-color: var(--accent);
+}
+
+/* ─── Preview Panel ──────────────────────────────────────────────────────── */
+.preview-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  background: var(--bg-base);
+}
+
+.preview-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface);
+  flex-shrink: 0;
+}
+
+.preview-url {
+  flex: 1;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preview-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn-preview-run {
+  background: var(--success);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: opacity 0.15s;
+}
+.btn-preview-run:hover { opacity: 0.85; }
+.btn-preview-run.starting { opacity: 0.7; cursor: default; }
+
+.btn-preview-stop {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-preview-stop:hover { background: var(--danger); color: #fff; }
+
+.btn-preview-action {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  padding: 4px 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.btn-preview-action:hover { color: var(--text-primary); border-color: var(--text-muted); }
+
+.btn-preview-logs {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  padding: 3px 7px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.btn-preview-logs:hover, .btn-preview-logs.active {
+  color: var(--accent-light);
+  border-color: var(--accent);
+}
+
+.preview-error {
+  padding: 8px 12px;
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-size: 12px;
+  border-bottom: 1px solid var(--danger);
+  flex-shrink: 0;
+}
+
+.preview-logs {
+  height: 140px;
+  overflow-y: auto;
+  background: #0d1526;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.preview-logs pre {
+  padding: 8px 12px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: #8b9cc8;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.preview-frame-wrapper {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.preview-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #fff;
+}
+
+.preview-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+.preview-placeholder-icon { font-size: 2.5rem; }
+.preview-placeholder p { font-size: 13px; max-width: 260px; }
+.preview-placeholder-hint { font-size: 12px; color: var(--text-muted); }
+
+/* Spinner */
+.preview-spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+.preview-spinner-large {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ─── Modal ──────────────────────────────────────────────────────────────── */
 .modal-overlay {

@@ -53,6 +53,13 @@ interface DeyadAPI {
   saveMessages(appId: string, messages: UiMessage[]): Promise<boolean>;
   loadMessages(appId: string): Promise<UiMessage[]>;
 
+  // Dev server (Preview)
+  appDevStart(appId: string): Promise<{ success: boolean; error?: string }>;
+  appDevStop(appId: string): Promise<{ success: boolean }>;
+  appDevStatus(appId: string): Promise<{ status: 'running' | 'starting' | 'stopped' }>;
+  onAppDevLog(cb: (payload: { appId: string; data: string }) => void): () => void;
+  onAppDevStatus(cb: (payload: { appId: string; status: string }) => void): () => void;
+
   // Docker / MySQL
   checkDocker(): Promise<boolean>;
   dbStart(appId: string): Promise<{ success: boolean; error?: string }>;

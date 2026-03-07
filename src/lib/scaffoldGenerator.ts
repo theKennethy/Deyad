@@ -1,7 +1,10 @@
 /**
- * Full-stack scaffold generator.
+ * Scaffold generators for Deyad.
  *
- * Generates a project with:
+ * generateFrontendScaffold — a minimal runnable React + Vite + TypeScript project
+ *   for frontend-only apps (enables in-app preview via `npm run dev`).
+ *
+ * generateFullStackScaffold — a project with:
  *   - React + Vite  (frontend, port 5173)
  *   - Express       (backend API, port 3001)
  *   - MySQL 8       (via Docker Compose, port 3306)
@@ -9,6 +12,171 @@
  *   - docker-compose.yml
  *   - README with startup instructions
  */
+
+export interface FrontendScaffoldOptions {
+  appName: string;
+  description: string;
+}
+
+/**
+ * Generates a minimal but complete React + Vite + TypeScript project.
+ * The AI subsequently overwrites files as the user chats, so the scaffold
+ * only needs to be runnable — not feature-complete.
+ */
+export function generateFrontendScaffold(opts: FrontendScaffoldOptions): Record<string, string> {
+  const { appName, description } = opts;
+
+  return {
+    'package.json': JSON.stringify(
+      {
+        name: appName.toLowerCase().replace(/[^a-z0-9-_.]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, ''),
+        version: '0.0.1',
+        description,
+        type: 'module',
+        scripts: {
+          dev: 'vite',
+          build: 'tsc && vite build',
+          preview: 'vite preview',
+        },
+        dependencies: {
+          react: '^18.3.1',
+          'react-dom': '^18.3.1',
+        },
+        devDependencies: {
+          '@vitejs/plugin-react': '^4.3.1',
+          '@types/react': '^18.3.11',
+          '@types/react-dom': '^18.3.1',
+          typescript: '^5.4.5',
+          vite: '^5.4.0',
+        },
+      },
+      null,
+      2,
+    ),
+
+    'tsconfig.json': JSON.stringify(
+      {
+        compilerOptions: {
+          target: 'ES2020',
+          useDefineForClassFields: true,
+          lib: ['ES2020', 'DOM', 'DOM.Iterable'],
+          module: 'ESNext',
+          skipLibCheck: true,
+          moduleResolution: 'bundler',
+          allowImportingTsExtensions: true,
+          resolveJsonModule: true,
+          isolatedModules: true,
+          noEmit: true,
+          jsx: 'react-jsx',
+          strict: true,
+        },
+        include: ['src'],
+        references: [{ path: './tsconfig.node.json' }],
+      },
+      null,
+      2,
+    ),
+
+    'tsconfig.node.json': JSON.stringify(
+      {
+        compilerOptions: {
+          composite: true,
+          skipLibCheck: true,
+          module: 'ESNext',
+          moduleResolution: 'bundler',
+          allowSyntheticDefaultImports: true,
+        },
+        include: ['vite.config.ts'],
+      },
+      null,
+      2,
+    ),
+
+    'vite.config.ts': `import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  server: { port: 5173 },
+});
+`,
+
+    'index.html': `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${appName}</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+`,
+
+    'src/main.tsx': `import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './index.css';
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+);
+`,
+
+    'src/index.css': `*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+  min-height: 100vh;
+}
+
+h1 { font-size: 2rem; font-weight: 700; margin-bottom: 1rem; }
+h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.75rem; }
+
+button {
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+
+input {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #334155;
+  border-radius: 0.375rem;
+  background: #1e293b;
+  color: #e2e8f0;
+  font-size: 0.875rem;
+  outline: none;
+  width: 100%;
+}
+
+input:focus { border-color: #6366f1; }
+`,
+
+    'src/App.tsx': `export default function App() {
+  return (
+    <div style={{ maxWidth: 640, margin: '4rem auto', padding: '0 1rem', textAlign: 'center' }}>
+      <h1>✨ ${appName}</h1>
+      <p style={{ color: '#94a3b8', marginTop: '0.5rem' }}>${description}</p>
+      <p style={{ color: '#64748b', marginTop: '2rem', fontSize: '0.875rem' }}>
+        Chat with the AI to build your app →
+      </p>
+    </div>
+  );
+}
+`,
+  };
+}
 
 export interface ScaffoldOptions {
   appName: string;
