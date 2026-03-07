@@ -96,12 +96,6 @@ export default function SettingsModal({ onClose }: Props) {
     } catch { /* Provider not available */ }
   };
 
-  /** Mask an API key for display (show first 4 and last 4 chars). */
-  const maskKey = (key: string) => {
-    if (key.length <= 8) return key ? '••••••••' : '';
-    return key;
-  };
-
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal settings-modal" onClick={(e) => e.stopPropagation()}>

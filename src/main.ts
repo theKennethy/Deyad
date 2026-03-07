@@ -14,6 +14,7 @@ if (started) { app.quit(); }
 const APPS_DIR = path.join(app.getPath('userData'), 'deyad-apps');
 const SETTINGS_PATH = path.join(app.getPath('userData'), 'deyad-settings.json');
 const DOCKER_CHECK_TIMEOUT_MS = 5000;
+const DEFAULT_GITIGNORE = 'node_modules/\ndist/\n.env\n*.log\ndeyad-messages.json\n';
 
 // ── Settings ──────────────────────────────────────────────────────────────────
 
@@ -790,8 +791,7 @@ async function gitInit(appId: string): Promise<void> {
   try {
     await execFileAsync('git', ['init'], { cwd: dir, timeout: 10000 });
     // Create a .gitignore
-    const gitignore = 'node_modules/\ndist/\n.env\n*.log\ndeyad-messages.json\n';
-    fs.writeFileSync(path.join(dir, '.gitignore'), gitignore, 'utf-8');
+    fs.writeFileSync(path.join(dir, '.gitignore'), DEFAULT_GITIGNORE, 'utf-8');
     await execFileAsync('git', ['add', '.'], { cwd: dir, timeout: 10000 });
     await execFileAsync('git', ['commit', '-m', 'Initial scaffold'], { cwd: dir, timeout: 10000 });
   } catch { /* git may not be installed */ }

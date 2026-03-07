@@ -37,7 +37,7 @@ export default function ChatPanel({ app, appFiles, dbStatus, onFilesUpdated, onD
   const [models, setModels] = useState<string[]>([]);
   const [selectedModel, setSelectedModel] = useState('');
   const [streaming, setStreaming] = useState(false);
-  const [ollamaError, setOllamaError] = useState('');
+  const [providerError, setProviderError] = useState('');
   const [aiProvider, setAiProvider] = useState('ollama');
   const [dockerAvailable, setDockerAvailable] = useState<boolean | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -71,10 +71,10 @@ export default function ChatPanel({ app, appFiles, dbStatus, onFilesUpdated, onD
           setSelectedModel(names[0]);
         }
       }
-      setOllamaError('');
+      setProviderError('');
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      setOllamaError(msg || 'AI provider is not available. Check Settings.');
+      setProviderError(msg || 'AI provider is not available. Check Settings.');
     }
   };
 
@@ -274,9 +274,9 @@ export default function ChatPanel({ app, appFiles, dbStatus, onFilesUpdated, onD
       </div>
 
       {/* Ollama error banner */}
-      {ollamaError && (
+      {providerError && (
         <div className="error-banner">
-          <span>⚠️ {ollamaError}</span>
+          <span>⚠️ {providerError}</span>
           <button onClick={loadModels} className="btn-retry">Retry</button>
         </div>
       )}
