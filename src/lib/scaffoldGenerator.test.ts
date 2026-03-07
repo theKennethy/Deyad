@@ -1,5 +1,62 @@
 import { describe, it, expect } from 'vitest';
-import { generateFullStackScaffold } from '../lib/scaffoldGenerator';
+import { generateFrontendScaffold, generateFullStackScaffold } from '../lib/scaffoldGenerator';
+
+describe('generateFrontendScaffold', () => {
+  const opts = { appName: 'My App', description: 'A test app' };
+
+  it('generates package.json with React and Vite', () => {
+    const files = generateFrontendScaffold(opts);
+    const pkg = JSON.parse(files['package.json']);
+    expect(pkg.dependencies.react).toBeDefined();
+    expect(pkg.dependencies['react-dom']).toBeDefined();
+    expect(pkg.devDependencies['@vitejs/plugin-react']).toBeDefined();
+    expect(pkg.devDependencies.vite).toBeDefined();
+    expect(pkg.scripts.dev).toBe('vite');
+    expect(pkg.scripts.build).toBeDefined();
+  });
+
+  it('generates vite.config.ts pointing at port 5173', () => {
+    const files = generateFrontendScaffold(opts);
+    expect(files['vite.config.ts']).toContain('5173');
+    expect(files['vite.config.ts']).toContain('@vitejs/plugin-react');
+  });
+
+  it('generates tsconfig files', () => {
+    const files = generateFrontendScaffold(opts);
+    const ts = JSON.parse(files['tsconfig.json']);
+    expect(ts.compilerOptions.jsx).toBe('react-jsx');
+    expect(files['tsconfig.node.json']).toBeDefined();
+  });
+
+  it('generates index.html with app name in title', () => {
+    const files = generateFrontendScaffold(opts);
+    expect(files['index.html']).toContain('<title>My App</title>');
+    expect(files['index.html']).toContain('src/main.tsx');
+  });
+
+  it('generates src/main.tsx with ReactDOM.createRoot', () => {
+    const files = generateFrontendScaffold(opts);
+    expect(files['src/main.tsx']).toContain('ReactDOM.createRoot');
+  });
+
+  it('generates src/App.tsx with app name and description', () => {
+    const files = generateFrontendScaffold(opts);
+    expect(files['src/App.tsx']).toContain('My App');
+    expect(files['src/App.tsx']).toContain('A test app');
+  });
+
+  it('generates src/index.css', () => {
+    const files = generateFrontendScaffold(opts);
+    expect(files['src/index.css']).toBeDefined();
+    expect(files['src/index.css'].length).toBeGreaterThan(0);
+  });
+
+  it('sanitizes app name into a valid npm package name', () => {
+    const files = generateFrontendScaffold({ appName: 'Hello World!', description: '' });
+    const pkg = JSON.parse(files['package.json']);
+    expect(pkg.name).toBe('hello-world!');
+  });
+});
 
 describe('generateFullStackScaffold', () => {
   const opts = {

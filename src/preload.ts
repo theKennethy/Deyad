@@ -89,6 +89,28 @@ contextBridge.exposeInMainWorld('deyad', {
   loadMessages: (appId: string): Promise<UiMessage[]> =>
     ipcRenderer.invoke('apps:load-messages', appId),
 
+  // ── Dev Server (Preview) ────────────────────────────────────────────────
+  appDevStart: (appId: string): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke('apps:dev-start', appId),
+
+  appDevStop: (appId: string): Promise<{ success: boolean }> =>
+    ipcRenderer.invoke('apps:dev-stop', appId),
+
+  appDevStatus: (appId: string): Promise<{ status: 'running' | 'starting' | 'stopped' }> =>
+    ipcRenderer.invoke('apps:dev-status', appId),
+
+  onAppDevLog: (cb: (payload: { appId: string; data: string }) => void) => {
+    const handler = (_: Electron.IpcRendererEvent, payload: { appId: string; data: string }) => cb(payload);
+    ipcRenderer.on('apps:dev-log', handler);
+    return () => ipcRenderer.removeListener('apps:dev-log', handler);
+  },
+
+  onAppDevStatus: (cb: (payload: { appId: string; status: string }) => void) => {
+    const handler = (_: Electron.IpcRendererEvent, payload: { appId: string; status: string }) => cb(payload);
+    ipcRenderer.on('apps:dev-status', handler);
+    return () => ipcRenderer.removeListener('apps:dev-status', handler);
+  },
+
   // ── Docker / MySQL ──────────────────────────────────────────────────────
   checkDocker: (): Promise<boolean> =>
     ipcRenderer.invoke('docker:check'),
