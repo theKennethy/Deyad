@@ -14,10 +14,10 @@ If you're committed to running AI locally with Ollama, Deyad offers several adva
 
 | | Deyad | dyad.sh |
 |---|---|---|
-| **Cloud API calls** | ❌ None — 100% local | Uses cloud providers by default |
-| **API keys required** | ❌ Never | Often required for full functionality |
-| **Data leaves machine** | ❌ Never | Depends on provider selection |
-| **Works offline** | ✅ Fully offline-capable | Requires internet for cloud models |
+| **Cloud API calls** | ❌ None — 100% local | Supports cloud providers (OpenAI, Anthropic, etc.) |
+| **API keys required** | ❌ Never | Required when using cloud providers |
+| **Data leaves machine** | ❌ Never | When using cloud providers |
+| **Works offline** | ✅ Fully offline-capable | Local models work offline; cloud models need internet |
 
 ### ⚡ Ollama-Optimized
 
@@ -122,8 +122,8 @@ npm run lint   # lint TypeScript files
 | Offline development | ✅ **Deyad** — works without internet |
 | Ollama-exclusive workflow | ✅ **Deyad** — purpose-built for Ollama |
 | Cost-conscious teams | ✅ **Deyad** — zero cloud API costs |
-| Need cloud provider options | Consider dyad.sh for cloud model variety |
-| Enterprise/team features | Consider dyad.sh if cloud features are needed |
+| Need multiple cloud providers | dyad.sh offers OpenAI, Anthropic, and other integrations |
+| Want both local and cloud options | dyad.sh supports both local and cloud models |
 
 **Bottom line:** If you're an Ollama user who values privacy, cost savings, and offline capability, Deyad is the better choice. It's designed from the ground up for local-first AI development.
 
