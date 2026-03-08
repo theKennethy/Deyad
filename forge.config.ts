@@ -23,10 +23,10 @@ const config: ForgeConfig = {
     // install via their distro's package manager, in addition to the
     // AppImage produced separately.
     ...(process.platform === 'linux' ? [new MakerDeb({}), new MakerRpm({})] : []),
-    // on macOS produce a DMG installer
-    ...(process.platform === 'darwin' ? [new MakerDMG({})] : []),
+    // on macOS produce a DMG installer (will no longer be built)
+    // ...(process.platform === 'darwin' ? [new MakerDMG({})] : []),
     // a ZIP file for all platforms as a fallback/archive
-    new MakerZIP({}, ['win32','darwin','linux']),
+    new MakerZIP({}, ['win32','linux']),
   ],
   plugins: [
     new VitePlugin({

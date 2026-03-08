@@ -120,7 +120,7 @@ npm run lint   # lint TypeScript files
 
 ## Packaging & CI/CD
 
-Automated GitHub Actions build all three platforms (ubuntu, macOS, Windows) on every tag or manual dispatch. The workflow:
+Automated GitHub Actions build Linux and Windows on every tag or manual dispatch. The workflow:
 
 1. `npm ci` installs dependencies
 2. `npm run make` creates platform-specific installers and archives
@@ -133,7 +133,7 @@ You can manually package locally:
 npm run make
 ```
 
-Artifacts land under `out/make/<platform>` (zip/exe/dmg) and, on Linux, you’ll also get `.deb` and `.rpm` packages plus an AppImage generated separately.
+Artifacts land under `out/make/<platform>` (zip/exe) and, on Linux, you’ll also get an AppImage generated separately.
 
 On a Linux machine you can also generate an AppImage by running:
 
@@ -152,7 +152,7 @@ git push origin v1.0.0
 
 (This requires the `GITHUB_TOKEN` secret; Actions handles it automatically.)
 
-Once the workflow completes a release page will contain the installers for Mac, Windows and Linux.
+Once the workflow completes a release page will contain the installers for Windows and Linux.
 
 ## License
 
