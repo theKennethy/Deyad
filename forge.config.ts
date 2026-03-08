@@ -1,6 +1,6 @@
 import type { ForgeConfig } from '@electron-forge/shared-types';
 import { MakerSquirrel } from '@electron-forge/maker-squirrel';
-import { MakerDMG } from '@electron-forge/maker-dmg';
+
 import { MakerDeb } from '@electron-forge/maker-deb';
 import { MakerRpm } from '@electron-forge/maker-rpm';
 import path from 'node:path';
@@ -19,9 +19,6 @@ const config: ForgeConfig = {
   rebuildConfig: {},
   makers: [
     new MakerSquirrel({}),
-    new MakerDMG({
-      format: 'ULFO',
-    }),
     new MakerRpm({}),
     new MakerDeb({}),
   ],
@@ -63,6 +60,7 @@ const config: ForgeConfig = {
   ],
   hooks: {
     postMake: async (_forgeConfig, results) => {
+      // create AppImage on linux
       const { default: createAppImage } = await import('electron-installer-appimage');
       for (const result of results) {
         if (result.platform === 'linux') {
@@ -76,6 +74,20 @@ const config: ForgeConfig = {
             });
           } catch (err) {
             console.warn('AppImage creation failed', err);
+          }
+        }
+        if (result.platform === 'darwin') {
+          // generate DMG using electron-installer-dmg
+          const { default: createDMG } = await import('electron-installer-dmg');
+          const dir = path.join(result[0], `deyad-${version}-darwin-x64`);
+          try {
+            await createDMG({
+              appPath: path.join(dir, 'Deyad.app'),
+              name: `Deyad-${version}`,
+              out: result[0],
+            });
+          } catch (err) {
+            console.warn('DMG creation failed', err);
           }
         }
       }

@@ -54,7 +54,8 @@
     "typescript": "~5.7.3",
     "vite": "^5.4.21",
     "vitest": "^3.1.1",
-    "electron-installer-appimage": "*"
+    "electron-installer-appimage": "*",
+    "electron-installer-dmg": "*"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
