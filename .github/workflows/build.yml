@@ -39,7 +39,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest]
     steps:
       - name: Download compiled dist
         uses: actions/download-artifact@v8
@@ -60,10 +60,8 @@ jobs:
         run: |
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
             npm run dist:linux
-          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            npm run dist:win
           else
-            npm run dist:mac
+            npm run dist:win
           fi
 
       - name: Upload artifacts
