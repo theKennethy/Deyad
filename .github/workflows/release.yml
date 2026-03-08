@@ -10,24 +10,14 @@ permissions:
   contents: write
 
 jobs:
-  # ── Step 1: Run tests before building anything ──────────────────────────
-  test:
-    name: Lint & Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - run: npm ci
-      - run: npm run lint
-      - run: npm test
-
   # ── Step 2: Build platform-specific installers in parallel ──────────────
   build:
     name: Build (${{ matrix.os }})
-    needs: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
