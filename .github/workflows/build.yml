@@ -4,16 +4,14 @@ on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version to build (e.g., 1.0.1)'
-        required: false
-        default: ''
+  workflow_dispatch: {}
 
 jobs:
-  build-linux:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,62 +25,24 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install AppImage tool
+      - name: Build package
         run: |
-          sudo apt-get update && sudo apt-get install -y appimagetool || true
-          # the package may not exist; build:appimage script has fallback
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            npm run dist:linux
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            npm run dist:win
+          else
+            npm run dist:mac
+          fi
 
-      - name: Package Linux
-        run: |
-          # build deb, rpm and zip packages
-          npm run make -- --platform=linux --targets=deb,rpm,zip --publish never
-
-      - name: List linux output directory
-        run: ls -R out/make || true
-
-      - name: Upload Linux artifacts
+      - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: linux-builds
-          path: |
-            out/make/**/*.deb
-            out/make/**/*.rpm
-            out/make/**/*.zip
-
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Package Windows
-        run: npm run make -- --platform=win32 --publish never
-
-      - name: List Windows output directory
-        run: ls -R out/make || true
-
-      - name: Upload Windows artifacts
-        uses: actions/upload-artifact@v7
-        with:
-          name: windows-builds
-          path: |
-            out/make/**/*.exe
-            out/make/**/*.zip
-            out/make/**/*.msi
-            out/make/**/*.nupkg
-
+          name: ${{ matrix.os }}-builds
+          path: dist/*
 
   release:
-    needs: [build-linux, build-windows]
+    needs: build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
@@ -100,8 +60,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            artifacts/linux-builds/*
-            artifacts/windows-builds/*
+            artifacts/*-builds/*
           draft: false
           prerelease: false
           generate_release_notes: true

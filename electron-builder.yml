@@ -1,0 +1,24 @@
+appId: com.deyad.app
+productName: Deyad
+directories:
+  output: dist
+  buildResources: build
+files:
+  - "**/*"
+  - "!node_modules/*/{CHANGELOG.md,README.md,*.d.ts}"
+linux:
+  target:
+    - deb
+    - rpm
+    - AppImage
+  artifactName: "${productName}-${version}-linux.${ext}"
+win:
+  target:
+    - nsis
+    - portable
+  artifactName: "${productName}-${version}-win.${ext}"
+mac:
+  target:
+    - dmg
+    - zip
+  artifactName: "${productName}-${version}-mac.${ext}"
