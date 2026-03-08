@@ -20,33 +20,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Extract version
-        id: getver
+      - name: Compute and push tag
         run: |
-          version=$(node -p "require('./package.json').version")
-          echo "version=$version" >> $GITHUB_OUTPUT
-      - name: Fetch existing tags
-        run: |
+          set -e
           git fetch --tags
-      - name: Check for existing tag
-        run: |
-          VER=${{ steps.getver.outputs.version }}
+          ORIG=$(node -p "require('./package.json').version")
+          VER=$ORIG
           if git rev-parse "v${VER}" >/dev/null 2>&1; then
-            echo "Tag v${VER} already exists. Bumping patch.";
-            # split version into components
+            echo "Tag v${VER} exists, bumping patch..."
             IFS=. read MAJOR MINOR PATCH <<<"${VER}"
             PATCH=$((PATCH + 1))
-            NEWVER="${MAJOR}.${MINOR}.${PATCH}"
-            echo "version=${NEWVER}" >> $GITHUB_OUTPUT
+            VER="${MAJOR}.${MINOR}.${PATCH}"
+            echo "Incremented version to ${VER}"
           fi
-      - name: Create and push tag
-        run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          TAG="v${{ steps.getver.outputs.version }}"
-          echo "Creating tag $TAG"
-          git tag "$TAG"
-          git push origin "$TAG"
+          echo "Creating tag v${VER}"
+          git tag "v${VER}"
+          git push origin "v${VER}"
+          echo "version=${VER}" >> $GITHUB_OUTPUT
   build:
     name: Build (${{ matrix.os }})
     # run on branch pushes and tag pushes; tag job executes concurrently but is not required
