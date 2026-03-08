@@ -1,8 +1,12 @@
 import type { ForgeConfig } from '@electron-forge/shared-types';
 import { MakerSquirrel } from '@electron-forge/maker-squirrel';
-import { MakerZIP } from '@electron-forge/maker-zip';
+import { MakerDMG } from '@electron-forge/maker-dmg';
 import { MakerDeb } from '@electron-forge/maker-deb';
 import { MakerRpm } from '@electron-forge/maker-rpm';
+import path from 'node:path';
+import { version } from './package.json';
+// we'll build an AppImage manually in postMake hook
+
 import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
@@ -15,7 +19,9 @@ const config: ForgeConfig = {
   rebuildConfig: {},
   makers: [
     new MakerSquirrel({}),
-    new MakerZIP({}, ['darwin']),
+    new MakerDMG({
+      format: 'ULFO',
+    }),
     new MakerRpm({}),
     new MakerDeb({}),
   ],
@@ -55,6 +61,26 @@ const config: ForgeConfig = {
       [FuseV1Options.OnlyLoadAppFromAsar]: true,
     }),
   ],
+  hooks: {
+    postMake: async (_forgeConfig, results) => {
+      const { default: createAppImage } = await import('electron-installer-appimage');
+      for (const result of results) {
+        if (result.platform === 'linux') {
+          const dir = path.join(result[0], `deyad-${version}-linux-x64`);
+          try {
+            await createAppImage({
+              src: dir,
+              dest: result[0],
+              arch: 'x86_64',
+              options: { icon: path.join(dir, 'build', 'icons', '256x256.png') },
+            });
+          } catch (err) {
+            console.warn('AppImage creation failed', err);
+          }
+        }
+      }
+    },
+  },
 };
 
 export default config;
