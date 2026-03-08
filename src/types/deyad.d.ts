@@ -100,6 +100,13 @@ interface DeyadAPI {
   // Git
   gitLog(appId: string): Promise<GitLogEntry[]>;
 
+  // Terminal support
+  createTerminal(appId?: string): Promise<string>;
+  terminalWrite(termId: string, data: string): Promise<void>;
+  terminalResize(termId: string, cols: number, rows: number): Promise<void>;
+  onTerminalData(cb: (payload: { id: string; data: string }) => void): () => void;
+  onTerminalExit(cb: (payload: { id: string; exitCode: number; signal: number }) => void): () => void;
+
   // Capacitor (Mobile)
   capacitorInit(appId: string): Promise<{ success: boolean; alreadyInitialized?: boolean; error?: string }>;
   capacitorOpen(appId: string, platform: 'android' | 'ios'): Promise<{ success: boolean; error?: string }>;

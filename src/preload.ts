@@ -194,4 +194,26 @@ contextBridge.exposeInMainWorld('deyad', {
   // ── Git ────────────────────────────────────────────────────────────────
   gitLog: (appId: string): Promise<{ hash: string; message: string; date: string }[]> =>
     ipcRenderer.invoke('git:log', appId),
+
+  // ── Terminal ────────────────────────────────────────────────────────────
+  createTerminal: (appId?: string): Promise<string> =>
+    ipcRenderer.invoke('terminal:start', { appId }),
+
+  terminalWrite: (termId: string, data: string): Promise<void> =>
+    ipcRenderer.invoke('terminal:write', { termId, data }),
+
+  terminalResize: (termId: string, cols: number, rows: number): Promise<void> =>
+    ipcRenderer.invoke('terminal:resize', { termId, cols, rows }),
+
+  onTerminalData: (cb: (payload: { id: string; data: string }) => void) => {
+    const handler = (_: Electron.IpcRendererEvent, payload: { id: string; data: string }) => cb(payload);
+    ipcRenderer.on('terminal:data', handler);
+    return () => ipcRenderer.removeListener('terminal:data', handler);
+  },
+
+  onTerminalExit: (cb: (payload: { id: string; exitCode: number; signal: number }) => void) => {
+    const handler = (_: Electron.IpcRendererEvent, payload: { id: string; exitCode: number; signal: number }) => cb(payload);
+    ipcRenderer.on('terminal:exit', handler);
+    return () => ipcRenderer.removeListener('terminal:exit', handler);
+  },
 });

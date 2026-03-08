@@ -179,13 +179,33 @@ export default function EditorPanel({ files, selectedFile, onSelectFile, onOpenF
       keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
       run: () => handleSave(),
     });
-  }, [handleSave]);
+    // also save on blur
+    editor.onDidBlurEditorText(() => {
+      if (isDirty) handleSave();
+    });
+  }, [handleSave, isDirty]);
 
   const handleEditorChange = useCallback((value: string | undefined) => {
     const v = value ?? '';
     setEditContent(v);
     setIsDirty(v !== (files[selectedFile ?? ''] ?? ''));
   }, [files, selectedFile]);
+
+  // auto-save when edit content changes (debounced)
+  useEffect(() => {
+    if (!isDirty) return;
+    const timer = setTimeout(() => {
+      handleSave();
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [editContent, isDirty, handleSave]);
+
+  // save before switching files or when component unmounts
+  useEffect(() => {
+    return () => {
+      if (isDirty) handleSave();
+    };
+  }, [selectedFile, isDirty, handleSave]);
 
   return (
     <div className="editor-panel">

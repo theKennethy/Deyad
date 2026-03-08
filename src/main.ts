@@ -1,4 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain, net, shell } from 'electron';
+import os from 'os';
+// pty will be required at runtime to avoid bundler issues
+import { v4 as uuidv4 } from 'uuid';
 import path from 'node:path';
 import fs from 'node:fs';
 import { execFile, spawn } from 'node:child_process';
@@ -470,6 +473,37 @@ ipcMain.handle('apps:export', async (_event, appId: string) => {
     const msg = err instanceof Error ? err.message : String(err);
     return { success: false, error: msg };
   }
+});
+
+// ── Terminal support ───────────────────────────────────────────────────────
+// spawn a pseudo terminal and forward data events to renderer
+const terminals = new Map<string, any>();
+
+ipcMain.handle('terminal:start', (_event, { appId }: { appId?: string }) => {
+  const pty = require('node-pty');
+  const cwd = appId ? appDir(appId) : undefined;
+  const shellPath = process.platform === 'win32' ? 'cmd.exe' : process.env.SHELL || '/bin/bash';
+  const term = pty.spawn(shellPath, [], { cwd, env: process.env });
+  const id = uuidv4();
+  terminals.set(id, term);
+
+  term.onData((data: string) => {
+    _event.sender.send('terminal:data', { id, data });
+  });
+  term.onExit(({ exitCode, signal }: { exitCode: number; signal: number }) => {
+    _event.sender.send('terminal:exit', { id, exitCode, signal });
+    terminals.delete(id);
+  });
+  return id;
+});
+ipcMain.handle('terminal:write', (_event, { termId, data }: { termId: string; data: string }) => {
+  const term = terminals.get(termId);
+  if (term) term.write(data);
+});
+
+ipcMain.handle('terminal:resize', (_event, { termId, cols, rows }: { termId: string; cols: number; rows: number }) => {
+  const term = terminals.get(termId);
+  if (term) term.resize(cols, rows);
 });
 
 /**

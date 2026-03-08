@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar';
 import ChatPanel from './components/ChatPanel';
 import EditorPanel from './components/EditorPanel';
 import PreviewPanel from './components/PreviewPanel';
+import TerminalPanel from './components/TerminalPanel';
 import NewAppModal from './components/NewAppModal';
 import ImportModal from './components/ImportModal';
 import SettingsModal from './components/SettingsModal';
@@ -16,13 +17,14 @@ export interface AppProject {
   dbProvider?: 'mysql' | 'postgresql';
 }
 
-type RightTab = 'editor' | 'preview';
+type RightTab = 'editor' | 'preview' | 'terminal';
 
 export default function App() {
   const [apps, setApps] = useState<AppProject[]>([]);
   const [selectedApp, setSelectedApp] = useState<AppProject | null>(null);
   const [appFiles, setAppFiles] = useState<Record<string, string>>({});
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  // sidebar width resizer
   const [showNewAppModal, setShowNewAppModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -30,7 +32,6 @@ export default function App() {
   const [rightTab, setRightTab] = useState<RightTab>('editor');
   const [canRevert, setCanRevert] = useState(false);
   const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
-
 
   // resizable panels (persist sizes in localStorage)
   const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
@@ -48,6 +49,17 @@ export default function App() {
   useEffect(() => {
     loadApps();
   }, []);
+
+  // persist when sizes change (sidebar & right panel) and update CSS variables
+  useEffect(() => {
+    localStorage.setItem('sidebarWidth', sidebarWidth.toString());
+    document.documentElement.style.setProperty('--sidebar-width', `${sidebarWidth}px`);
+  }, [sidebarWidth]);
+
+  useEffect(() => {
+    localStorage.setItem('rightWidth', rightWidth.toString());
+    document.documentElement.style.setProperty('--editor-width', `${rightWidth}px`);
+  }, [rightWidth]);
 
   // Subscribe to DB status events
   useEffect(() => {
@@ -234,9 +246,9 @@ export default function App() {
   }, [rightWidth]);
 
   return (
-    <div className="app-layout" style={{ display: 'flex', width: '100%', height: '100%' }}>
-      {/* always-visible sidebar on left */}
-      <aside className="sidebar" style={{ width: sidebarWidth }}>
+    <div className="app-layout">
+      {/* sidebar */}
+      <aside className="sidebar">
         <Sidebar
           apps={apps}
           selectedApp={selectedApp}
@@ -250,7 +262,7 @@ export default function App() {
         />
       </aside>
 
-      {/* handle to resize sidebar */}
+      {/* resizer between sidebar and centre */}
       <div
         className="resizer"
         data-side="sidebar"
@@ -258,9 +270,8 @@ export default function App() {
       />
 
       {selectedApp ? (
-        <div className="main-layout" style={{ display: 'flex', flex: 1, height: '100%' }}>
-          {/* centre chat area */}
-          <div className="chat-wrapper" style={{ flex: 1, overflow: 'hidden' }}>
+        <>
+          <div className="chat-wrapper">
             <ChatPanel
               app={selectedApp}
               appFiles={appFiles}
@@ -275,15 +286,14 @@ export default function App() {
             />
           </div>
 
-          {/* handle to resize right panel */}
+          {/* resizer between centre and right */}
           <div
             className="resizer"
             data-side="right"
             onMouseDown={(e) => startDrag('right', e.clientX)}
           />
 
-          {/* right panel */}
-          <div className="right-panel" style={{ width: rightWidth }}>
+          <div className="right-panel">
             <div className="right-panel-tabs">
               <button
                 className={`right-tab ${rightTab === 'editor' ? 'active' : ''}`}
@@ -297,6 +307,12 @@ export default function App() {
               >
                 Preview
               </button>
+              <button
+                className={`right-tab ${rightTab === 'terminal' ? 'active' : ''}`}
+                onClick={() => setRightTab('terminal')}
+              >
+                Terminal
+              </button>
             </div>
 
             {rightTab === 'editor' ? (
@@ -307,13 +323,15 @@ export default function App() {
                 onOpenFolder={() => window.deyad.openAppFolder(selectedApp.id)}
                 onFileEdit={handleFileEdit}
               />
-            ) : (
+            ) : rightTab === 'preview' ? (
               <PreviewPanel app={selectedApp} />
+            ) : (
+              <TerminalPanel appId={selectedApp.id} />
             )}
           </div>
-        </div>
+        </>
       ) : (
-        <div className="empty-state" style={{ flex: 1 }}>
+        <div className="empty-state">
           <div className="empty-state-content">
             <div className="empty-logo"></div>
             <h2>Welcome to Deyad</h2>

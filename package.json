@@ -61,6 +61,10 @@
     "react-dom": "^18.3.1",
     "react-markdown": "^9.0.3",
     "remark-gfm": "^4.0.1",
-    "update-electron-app": "^3.1.2"
+    "update-electron-app": "^3.1.2",
+    "xterm": "^5.0.1",
+    "xterm-addon-fit": "^0.7.0",
+    "node-pty": "^1.0.0",
+    "uuid": "^9.0.0"
   }
 }
