@@ -34,9 +34,8 @@ jobs:
 
       - name: Package Linux
         run: |
-          # build deb, rpm, zip and the AppImage (the latter created by post script)
+          # build deb, rpm and zip packages
           npm run make -- --platform=linux --targets=deb,rpm,zip --publish never
-          npm run build:appimage || true
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v7
