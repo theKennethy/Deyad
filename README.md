@@ -133,7 +133,15 @@ You can manually package locally:
 npm run make
 ```
 
-Artifacts land under `out/make/<platform>` (deb/rpm/exe/zip/dmg).
+Artifacts land under `out/make/<platform>` (zip/exe/dmg) and, on Linux, you’ll also get `.deb` and `.rpm` packages plus an AppImage generated separately.
+
+On a Linux machine you can also generate an AppImage by running:
+
+```bash
+npm run build:appimage
+```
+
+The script will invoke Forge’s make step which now creates `.deb` and `.rpm` packages in addition to the raw directory; after that it runs `appimagetool` to convert the directory into an AppImage. The tool must be installed (via your distro, or grab it from https://github.com/AppImage/AppImageKit) or you’ll see a message reminding you to install it.
 
 To publish a release, tag and push:
 

@@ -27,17 +27,24 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install AppImage tool
+        run: |
+          sudo apt-get update && sudo apt-get install -y appimagetool || true
+          # the package may not exist; build:appimage script has fallback
+
       - name: Package Linux
-        run: npm run make -- --platform=linux --publish never
+        run: |
+          npm run build:appimage || npm run make -- --platform=linux --publish never
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v7
         with:
           name: linux-builds
           path: |
-            dist/*.AppImage
-            dist/*.deb
-            dist/*.rpm
+            out/make/*.AppImage
+            out/make/**/*.AppImage
+            out/make/**/*.deb
+            out/make/**/*.rpm
 
   build-windows:
     runs-on: windows-latest
@@ -57,12 +64,17 @@ jobs:
       - name: Package Windows
         run: npm run make -- --platform=win32 --publish never
 
+      - name: List Windows output directory
+        run: ls -R out/make || true
+
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v7
         with:
           name: windows-builds
           path: |
-            dist/*.exe
+            out/make/**/*.exe
+            out/make/**/*.zip
+            out/make/**/*.msi
 
   build-mac:
     runs-on: macos-latest
@@ -82,13 +94,16 @@ jobs:
       - name: Package macOS
         run: npm run make -- --platform=darwin --publish never
 
+      - name: List mac output directory
+        run: ls -R out/make || true
+
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v7
         with:
           name: mac-builds
           path: |
-            dist/*.dmg
-            dist/*.zip
+            out/make/**/*.dmg
+            out/make/**/*.zip
 
   release:
     needs: [build-linux, build-windows, build-mac]

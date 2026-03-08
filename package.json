@@ -15,6 +15,7 @@
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "build:linux": "npm run make -- --platform=linux --publish never",
+    "build:appimage": "npm run make -- --platform=linux --publish never && (appimagetool -n out/Deyad-linux-x64 out/make/Deyad-${npm_package_version}-x86_64.AppImage || echo \"AppImage step skipped - install appimagetool or run npx electron-installer-appimage manually\" )",
     "build:win": "npm run make -- --platform=win32 --publish never",
     "build:mac": "npm run make -- --platform=darwin --publish never",
     "lint": "eslint --ext .ts,.tsx .",

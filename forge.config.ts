@@ -1,12 +1,13 @@
 import type { ForgeConfig } from '@electron-forge/shared-types';
 import { MakerSquirrel } from '@electron-forge/maker-squirrel';
 import { MakerZIP } from '@electron-forge/maker-zip';
-
 import { MakerDeb } from '@electron-forge/maker-deb';
 import { MakerRpm } from '@electron-forge/maker-rpm';
+
 import path from 'node:path';
+import fs from 'fs';
 import { version } from './package.json';
-// we'll build an AppImage manually in postMake hook
+// AppImage maker will produce .AppImage on linux hosts (handled outside Forge)
 
 import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
@@ -19,12 +20,14 @@ const config: ForgeConfig = {
   },
   rebuildConfig: {},
   makers: [
-    // on a real Windows host we can create the Squirrel installer; on
-    // other platforms just emit a ZIP (no Wine/Mono needed).
+    // windows installers/ZIP
     ...(process.platform === 'win32' ? [new MakerSquirrel({})] : []),
-    new MakerZIP({}, ['win32','darwin']),
-    new MakerRpm({}),
-    new MakerDeb({}),
+    // on linux we still want .deb and .rpm packages so users can
+    // install via their distro's package manager, in addition to the
+    // AppImage produced separately.
+    ...(process.platform === 'linux' ? [new MakerDeb({}), new MakerRpm({})] : []),
+    // a ZIP file for all platforms as a fallback/archive
+    new MakerZIP({}, ['win32','darwin','linux']),
   ],
   plugins: [
     new VitePlugin({
@@ -65,49 +68,27 @@ const config: ForgeConfig = {
   hooks: {
     postMake: async (_forgeConfig, results) => {
       console.log('postMake results:', JSON.stringify(results, null, 2));
-      // helper to extract base output path from result element
-      const resolveBase = (r: any): string | undefined => {
-        if (!r) return undefined;
-        if (typeof r === 'string') return r;
-        if (Array.isArray(r) && r.length > 0) return r[0];
-        if (r.outputPath) return r.outputPath;
-        if (r[0]) return r[0];
-        return undefined;
-      };
-      // create AppImage on linux
-      const { default: createAppImage } = await import('electron-installer-appimage');
-      for (const result of results) {
-        const base = resolveBase(result);
-        if (!base) {
-          console.warn('could not determine base path for result', result);
-          continue;
-        }
-        if (result.platform === 'linux') {
-          const dir = path.join(base, `deyad-${version}-linux-x64`);
-          try {
-            await createAppImage({
-              src: dir,
-              dest: base,
-              arch: 'x86_64',
-              options: { icon: path.join(dir, 'build', 'icons', '256x256.png') },
-            });
-          } catch (err) {
-            console.warn('AppImage creation failed', err);
-          }
-        }
-        if (result.platform === 'darwin') {
-          // generate DMG using electron-installer-dmg
-          const { default: createDMG } = await import('electron-installer-dmg');
-          const dir = path.join(base, `deyad-${version}-darwin-x64`);
-          try {
-            await createDMG({
-              appPath: path.join(dir, 'Deyad.app'),
-              name: `Deyad-${version}`,
-              out: base,
-            });
-          } catch (err) {
-            console.warn('DMG creation failed', err);
-          }
+
+      // regardless of what forge returns, we know where the linux and darwin
+      // directories are created by the packager, so just try to create the
+      // AppImage/DMG unconditionally. This avoids the "could not determine
+      // base path" warnings above.
+      // only create DMG here – AppImage is handled by a separate
+      // script because the electron-installer-appimage module has been
+      // unreliable (it often trips over forge's build metadata).  Running
+      // `appimagetool` manually after packaging is more predictable.
+      const { default: createDMG } = await import('electron-installer-dmg');
+
+      const darwinDir = path.join(process.cwd(), 'out', `Deyad-darwin-x64`);
+      if (process.platform === 'darwin' && fs.existsSync(darwinDir)) {
+        try {
+          await createDMG({
+            appPath: path.join(darwinDir, 'Deyad.app'),
+            name: `Deyad-${version}`,
+            out: path.dirname(darwinDir),
+          });
+        } catch (err) {
+          console.warn('DMG creation failed', err);
         }
       }
     },
