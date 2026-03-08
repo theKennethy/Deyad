@@ -120,12 +120,12 @@ npm run lint   # lint TypeScript files
 
 ## Packaging & CI/CD
 
-Automated GitHub Actions build Linux and Windows on every tag or manual dispatch. The workflow:
+Automated GitHub Actions build all three platforms using electron-builder on every tag or manual dispatch. The workflow:
 
 1. `npm ci` installs dependencies
 2. `npm run make` creates platform-specific installers and archives
 3. Artifacts are uploaded to the workflow run
-4. On tag pushes the job also runs `npx electron-forge publish --platform=all --target=github` which creates a GitHub Release and attaches the binaries.
+4. On tag pushes the job creates a GitHub Release and attaches the binaries.
 
 You can manually package locally:
 
@@ -146,7 +146,7 @@ git push origin v1.0.0
 
 (This requires the `GITHUB_TOKEN` secret; Actions handles it automatically.)
 
-Once the workflow completes a release page will contain the installers for Windows and Linux.
+Once the workflow completes a release page will contain installers for Linux, Windows and macOS.
 
 Automatic versioning is supported: pushing to `main` will bump the patch version, tag the commit, and trigger the build workflow (see CI section below).
 
