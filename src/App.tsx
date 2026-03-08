@@ -31,6 +31,19 @@ export default function App() {
   const [canRevert, setCanRevert] = useState(false);
   const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
 
+
+  // resizable panels (persist sizes in localStorage)
+  const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
+    const stored = localStorage.getItem('sidebarWidth');
+    const n = stored ? parseInt(stored, 10) : NaN;
+    return isNaN(n) ? 220 : n;
+  });
+  const [rightWidth, setRightWidth] = useState<number>(() => {
+    const stored = localStorage.getItem('rightWidth');
+    const n = stored ? parseInt(stored, 10) : NaN;
+    return isNaN(n) ? 340 : n;
+  });
+
   // Load app list on mount
   useEffect(() => {
     loadApps();
@@ -90,6 +103,29 @@ export default function App() {
     await window.deyad.writeFiles(selectedApp.id, { [filePath]: content });
     setAppFiles((prev) => ({ ...prev, [filePath]: content }));
   }, [selectedApp]);
+
+
+
+  // drag resizing helpers
+  const startDrag = (type: 'sidebar' | 'right', startX: number) => {
+    const initSidebar = sidebarWidth;
+    const initRight = rightWidth;
+    const move = (e: MouseEvent) => {
+      const dx = e.clientX - startX;
+      if (type === 'sidebar') {
+        setSidebarWidth(Math.max(100, initSidebar + dx));
+      } else {
+        setRightWidth(Math.max(200, initRight - dx));
+      }
+    };
+    const up = () => {
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', up);
+    };
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+  };
+
 
   const handleCreateApp = async (name: string, description: string, appType: 'frontend' | 'fullstack', dbProvider?: 'mysql' | 'postgresql', templatePrompt?: string) => {
     const app = await window.deyad.createApp(name, description, appType, dbProvider);
@@ -188,39 +224,66 @@ export default function App() {
     }
   };
 
+  // persist when sizes change
+  useEffect(() => {
+    localStorage.setItem('sidebarWidth', sidebarWidth.toString());
+  }, [sidebarWidth]);
+
+  useEffect(() => {
+    localStorage.setItem('rightWidth', rightWidth.toString());
+  }, [rightWidth]);
+
   return (
-    <div className="app-layout">
-      {/* Left sidebar: app list */}
-      <Sidebar
-        apps={apps}
-        selectedApp={selectedApp}
-        onSelectApp={selectApp}
-        onNewApp={() => setShowNewAppModal(true)}
-        onDeleteApp={handleDeleteApp}
-        onRenameApp={handleRenameApp}
-        onExportApp={handleExportApp}
-        onImportApp={() => setShowImportModal(true)}
-        onOpenSettings={() => setShowSettings(true)}
+    <div className="app-layout" style={{ display: 'flex', width: '100%', height: '100%' }}>
+      {/* always-visible sidebar on left */}
+      <aside className="sidebar" style={{ width: sidebarWidth }}>
+        <Sidebar
+          apps={apps}
+          selectedApp={selectedApp}
+          onSelectApp={selectApp}
+          onNewApp={() => setShowNewAppModal(true)}
+          onDeleteApp={handleDeleteApp}
+          onRenameApp={handleRenameApp}
+          onExportApp={handleExportApp}
+          onImportApp={() => setShowImportModal(true)}
+          onOpenSettings={() => setShowSettings(true)}
+        />
+      </aside>
+
+      {/* handle to resize sidebar */}
+      <div
+        className="resizer"
+        data-side="sidebar"
+        onMouseDown={(e) => startDrag('sidebar', e.clientX)}
       />
 
       {selectedApp ? (
-        <>
-          {/* Centre: chat */}
-          <ChatPanel
-            app={selectedApp}
-            appFiles={appFiles}
-            selectedFile={selectedFile}
-            dbStatus={dbStatus}
-            onFilesUpdated={handleFilesUpdated}
-            onDbToggle={handleDbToggle}
-            onRevert={handleRevert}
-            canRevert={canRevert}
-            initialPrompt={pendingPrompt}
-            onInitialPromptConsumed={() => setPendingPrompt(null)}
+        <div className="main-layout" style={{ display: 'flex', flex: 1, height: '100%' }}>
+          {/* centre chat area */}
+          <div className="chat-wrapper" style={{ flex: 1, overflow: 'hidden' }}>
+            <ChatPanel
+              app={selectedApp}
+              appFiles={appFiles}
+              selectedFile={selectedFile}
+              dbStatus={dbStatus}
+              onFilesUpdated={handleFilesUpdated}
+              onDbToggle={handleDbToggle}
+              onRevert={handleRevert}
+              canRevert={canRevert}
+              initialPrompt={pendingPrompt}
+              onInitialPromptConsumed={() => setPendingPrompt(null)}
+            />
+          </div>
+
+          {/* handle to resize right panel */}
+          <div
+            className="resizer"
+            data-side="right"
+            onMouseDown={(e) => startDrag('right', e.clientX)}
           />
 
-          {/* Right: file editor + preview tabs */}
-          <div className="right-panel">
+          {/* right panel */}
+          <div className="right-panel" style={{ width: rightWidth }}>
             <div className="right-panel-tabs">
               <button
                 className={`right-tab ${rightTab === 'editor' ? 'active' : ''}`}
@@ -248,9 +311,9 @@ export default function App() {
               <PreviewPanel app={selectedApp} />
             )}
           </div>
-        </>
+        </div>
       ) : (
-        <div className="empty-state">
+        <div className="empty-state" style={{ flex: 1 }}>
           <div className="empty-state-content">
             <div className="empty-logo"></div>
             <h2>Welcome to Deyad</h2>

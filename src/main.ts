@@ -476,7 +476,7 @@ ipcMain.handle('apps:export', async (_event, appId: string) => {
  * Builds a ZIP buffer from a directory using the Store method (no compression).
  * This is a minimal implementation that produces valid ZIP archives.
  */
-async function buildZipBuffer(baseDir: string, prefix: string): Promise<Buffer> {
+async function buildZipBuffer(baseDir: string, _prefix: string): Promise<Buffer> {
   const entries: { name: string; data: Buffer }[] = [];
   const walk = (dir: string, rel: string) => {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {

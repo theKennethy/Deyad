@@ -42,6 +42,17 @@ body {
   height: 100vh;
 }
 
+/* resizer bars between panels */
+.resizer {
+  width: 4px;
+  background: var(--border);
+  cursor: col-resize;
+  z-index: 2;
+}
+.resizer:hover {
+  background: var(--accent);
+}
+
 /* ─── Sidebar ────────────────────────────────────────────────────────────── */
 .sidebar {
   background: var(--bg-surface);

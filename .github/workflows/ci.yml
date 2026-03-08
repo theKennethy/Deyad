@@ -82,3 +82,6 @@ jobs:
           name: deyad-${{ matrix.os }}
           path: out/make/**
           retention-days: 7
+
+      # playwright E2E on linux only
+

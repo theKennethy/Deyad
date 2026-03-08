@@ -16,7 +16,6 @@
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx .",
     "test": "vitest run",
-    "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [
@@ -37,7 +36,6 @@
     "@electron-forge/plugin-fuses": "^7.11.1",
     "@electron-forge/plugin-vite": "^7.11.1",
     "@electron/fuses": "^1.0.0",
-    "@playwright/test": "^1.58.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
@@ -48,11 +46,9 @@
     "@typescript-eslint/parser": "^5.62.0",
     "@vitejs/plugin-react": "^4.4.1",
     "electron": "^40.8.0",
-    "electron-playwright-helpers": "^2.1.0",
     "eslint": "^8.57.1",
     "eslint-plugin-import": "^2.32.0",
     "jsdom": "^28.1.0",
-    "playwright": "^1.58.2",
     "typescript": "~5.7.3",
     "vite": "^5.4.21",
     "vitest": "^3.1.1"

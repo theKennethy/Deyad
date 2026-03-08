@@ -60,8 +60,7 @@ export default function ChatPanel({ app, appFiles, selectedFile, dbStatus, onFil
     loadModels();
     checkDocker();
     loadPersistedMessages();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [app.id]);
+  }, [app.id]); // eslint-disable-line
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -94,8 +93,7 @@ export default function ChatPanel({ app, appFiles, selectedFile, dbStatus, onFil
       }, 100);
       return () => clearTimeout(timer);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialPrompt, selectedModel]);
+  }, [initialPrompt, selectedModel]); // eslint-disable-line
 
   const loadModels = async () => {
     try {
