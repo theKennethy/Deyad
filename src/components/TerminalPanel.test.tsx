@@ -15,9 +15,10 @@ describe('TerminalPanel', () => {
     };
   });
 
-  it('renders and calls createTerminal', async () => {
-    const { container } = render(<TerminalPanel appId="foo" />);
+  it('renders, shows toolbar and calls createTerminal', async () => {
+    const { container, getByText } = render(<TerminalPanel appId="foo" />);
     expect(container.querySelector('.terminal-panel')).toBeTruthy();
+    expect(getByText('Clear')).toBeTruthy();
     // wait a tick for effect
     await Promise.resolve();
     expect(window.deyad.createTerminal).toHaveBeenCalledWith('foo');

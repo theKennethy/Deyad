@@ -3,12 +3,31 @@ import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import 'xterm/css/xterm.css';
 
+// simple toolbar above the terminal
+const toolbarStyle: React.CSSProperties = {
+  position: 'absolute',
+  top: 0,
+  right: 0,
+  padding: '4px',
+  zIndex: 10,
+};
+
+const buttonStyle: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.1)',
+  border: 'none',
+  color: '#fff',
+  padding: '2px 6px',
+  cursor: 'pointer',
+  marginLeft: '4px',
+};
+
 interface Props {
   appId?: string;
 }
 
 export default function TerminalPanel({ appId }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [showToolbar, setShowToolbar] = useState(true);
   const termRef = useRef<Terminal | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
   const [termId, setTermId] = useState<string | null>(null);
@@ -16,7 +35,7 @@ export default function TerminalPanel({ appId }: Props) {
   // initialise terminal once
   useEffect(() => {
     if (!containerRef.current) return;
-    const term = new Terminal({ cursorBlink: true, fontSize: 13 });
+    const term = new Terminal({ cursorBlink: true, fontSize: 13, scrollback: 1000 });
     const fit = new FitAddon();
     term.loadAddon(fit);
     term.open(containerRef.current);
@@ -34,6 +53,24 @@ export default function TerminalPanel({ appId }: Props) {
     const observer = new ResizeObserver(handleResize);
     observer.observe(containerRef.current);
 
+    // focus so keystrokes go to terminal
+    term.focus();
+
+    // paste shortcut
+    term.attachCustomKeyEventHandler((e) => {
+      if (e.ctrlKey && e.key === 'v') {
+        navigator.clipboard.readText().then(text => term.write(text));
+        return false;
+      }
+      return true;
+    });
+
+    // cleanup
+    return () => {
+      observer.disconnect();
+      term.dispose();
+    };
+
     return () => {
       observer.disconnect();
       term.dispose();
@@ -41,6 +78,10 @@ export default function TerminalPanel({ appId }: Props) {
   }, []);
 
   // create pty when terminal object ready
+
+  const clearTerminal = () => {
+    if (termRef.current) termRef.current.clear();
+  };
   useEffect(() => {
     if (termRef.current && !termId) {
       window.deyad.createTerminal(appId).then((id) => {
@@ -83,5 +124,17 @@ process exited (${payload.exitCode})\r\n`);
     };
   }, [termId]);
 
-  return <div className="terminal-panel" ref={containerRef} style={{ width: '100%', height: '100%', background: '#000' }} />;
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      {showToolbar && (
+        <div style={toolbarStyle}>
+          <button style={buttonStyle} onClick={clearTerminal}>Clear</button>
+          <button style={buttonStyle} onClick={() => setShowToolbar(s => !s)}>
+            {showToolbar ? 'Hide' : 'Show'}
+          </button>
+        </div>
+      )}
+      <div className="terminal-panel" ref={containerRef} style={{ width: '100%', height: '100%', background: '#000' }} />
+    </div>
+  );
 }
