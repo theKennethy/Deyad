@@ -29,7 +29,8 @@ body {
   background: var(--bg-base);
   color: var(--text-primary);
   height: 100vh;
-  overflow: hidden;
+  /* allow scrollbars when window narrower than min content width */
+  overflow: auto;
   font-size: 14px;
   line-height: 1.5;
   -webkit-app-region: no-drag;
@@ -38,11 +39,10 @@ body {
 /* ─── Layout ─────────────────────────────────────────────────────────────── */
 .app-layout {
   display: grid;
-  /* sidebar | resizer | centre | resizer | right/editor */
-  grid-template-columns: var(--sidebar-width) 4px 1fr 4px var(--editor-width);
+  /* allow sidebar and right area to shrink but not collapse completely */
+  grid-template-columns: minmax(100px, var(--sidebar-width)) 4px 1fr 4px minmax(200px, var(--editor-width));
   height: 100vh;
-}
-
+  min-width: 0; /* allow 1fr to shrink */
 .chat-wrapper {
   height: 100%;
   overflow: hidden;
