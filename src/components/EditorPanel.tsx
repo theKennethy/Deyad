@@ -130,8 +130,21 @@ function FileTree({
 export default function EditorPanel({ files, selectedFile, onSelectFile, onOpenFolder, onFileEdit }: Props) {
   const fileCount = Object.keys(files).length;
   const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   // Filter files by search query (matches path or content)
+
+  // focus search box via keyboard shortcut
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
   const filteredFiles = useMemo(() => {
     if (!searchQuery.trim()) return files;
     const query = searchQuery.toLowerCase();
@@ -220,11 +233,12 @@ export default function EditorPanel({ files, selectedFile, onSelectFile, onOpenF
         {fileCount > 0 && (
           <div className="file-search">
             <input
+              ref={searchInputRef}
               className="file-search-input"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search files…"
+              placeholder="Search files… (Ctrl+P)"
             />
             {searchQuery && (
               <span className="file-search-count">
