@@ -34,15 +34,19 @@ jobs:
 
       - name: Package Linux
         run: |
-          npm run build:appimage || npm run make -- --platform=linux --publish never
+          # build deb, rpm, zip and the AppImage (the latter created by post script)
+          npm run make -- --platform=linux --targets=deb,rpm,zip --publish never
+          npm run build:appimage || true
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v7
         with:
           name: linux-builds
           path: |
-            out/make/*.AppImage
             out/make/**/*.AppImage
+            out/make/**/*.deb
+            out/make/**/*.rpm
+            out/make/**/*.zip
 
   build-windows:
     runs-on: windows-latest
@@ -73,6 +77,7 @@ jobs:
             out/make/**/*.exe
             out/make/**/*.zip
             out/make/**/*.msi
+            out/make/**/*.nupkg
 
 
   release:
