@@ -506,6 +506,17 @@ ipcMain.handle('terminal:resize', (_event, { termId, cols, rows }: { termId: str
   if (term) term.resize(cols, rows);
 });
 
+ipcMain.handle('terminal:show-menu', (event) => {
+  const { Menu } = require('electron');
+  const menu = Menu.buildFromTemplate([
+    { label: 'Copy', role: 'copy' },
+    { label: 'Paste', role: 'paste' },
+    { type: 'separator' },
+    { label: 'Clear', click: () => event.sender.send('terminal:clear') },
+  ]);
+  menu.popup({ window: BrowserWindow.fromWebContents(event.sender) });
+});
+
 /**
  * Builds a ZIP buffer from a directory using the Store method (no compression).
  * This is a minimal implementation that produces valid ZIP archives.
