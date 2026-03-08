@@ -9,6 +9,8 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,7 +24,7 @@ jobs:
       - name: Install Linux build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3 make g++
+          sudo apt-get install -y python3 make g++ rpm
 
       - name: Install dependencies
         run: npm ci
@@ -32,3 +34,15 @@ jobs:
 
       - name: Test
         run: npm test
+
+      - name: Build Electron app (Linux)
+        run: npm run make -- --platform=linux --publish never
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-builds
+          path: |
+            out/make/**/*.deb
+            out/make/**/*.rpm
+            out/make/**/*.zip
