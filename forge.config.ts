@@ -19,8 +19,10 @@ const config: ForgeConfig = {
   },
   rebuildConfig: {},
   makers: [
+    // Squirrel for Windows still requires Wine/Mono on Linux; we add a ZIP
+    // fallback to allow building without those tools.
     new MakerSquirrel({}),
-    new MakerZIP({}, ['darwin']),
+    new MakerZIP({}, ['win32','darwin']),
     new MakerRpm({}),
     new MakerDeb({}),
   ],
