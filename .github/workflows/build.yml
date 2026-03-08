@@ -73,7 +73,7 @@ jobs:
           path: dist/*
 
   release:
-    needs: build
+    needs: package
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
