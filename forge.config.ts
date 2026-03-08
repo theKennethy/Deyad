@@ -60,15 +60,30 @@ const config: ForgeConfig = {
   ],
   hooks: {
     postMake: async (_forgeConfig, results) => {
+      console.log('postMake results:', JSON.stringify(results, null, 2));
+      // helper to extract base output path from result element
+      const resolveBase = (r: any): string | undefined => {
+        if (!r) return undefined;
+        if (typeof r === 'string') return r;
+        if (Array.isArray(r) && r.length > 0) return r[0];
+        if (r.outputPath) return r.outputPath;
+        if (r[0]) return r[0];
+        return undefined;
+      };
       // create AppImage on linux
       const { default: createAppImage } = await import('electron-installer-appimage');
       for (const result of results) {
+        const base = resolveBase(result);
+        if (!base) {
+          console.warn('could not determine base path for result', result);
+          continue;
+        }
         if (result.platform === 'linux') {
-          const dir = path.join(result[0], `deyad-${version}-linux-x64`);
+          const dir = path.join(base, `deyad-${version}-linux-x64`);
           try {
             await createAppImage({
               src: dir,
-              dest: result[0],
+              dest: base,
               arch: 'x86_64',
               options: { icon: path.join(dir, 'build', 'icons', '256x256.png') },
             });
@@ -79,12 +94,12 @@ const config: ForgeConfig = {
         if (result.platform === 'darwin') {
           // generate DMG using electron-installer-dmg
           const { default: createDMG } = await import('electron-installer-dmg');
-          const dir = path.join(result[0], `deyad-${version}-darwin-x64`);
+          const dir = path.join(base, `deyad-${version}-darwin-x64`);
           try {
             await createDMG({
               appPath: path.join(dir, 'Deyad.app'),
               name: `Deyad-${version}`,
-              out: result[0],
+              out: base,
             });
           } catch (err) {
             console.warn('DMG creation failed', err);
