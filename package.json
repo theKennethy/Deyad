@@ -27,7 +27,7 @@
     "app-builder",
     "electron"
   ],
-  "author": "Deyad",
+  "author": {"name": "Deyad","email": "maintainer@deyad.app"},
   "license": "MIT",
   "devDependencies": {
     "electron-builder": "^24.0.0",
