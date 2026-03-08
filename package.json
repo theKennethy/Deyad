@@ -19,7 +19,7 @@
     "lint": "eslint --ext .ts,.tsx .",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
-  }
+  },
   "keywords": [
     "ollama",
     "ai",
