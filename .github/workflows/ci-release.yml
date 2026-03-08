@@ -43,7 +43,7 @@ jobs:
 
   build:
     name: Build (${{ matrix.os }})
-    needs: tag
+    # run on branch pushes and tag pushes; tag job executes concurrently but is not required
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
