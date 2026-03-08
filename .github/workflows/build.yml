@@ -7,11 +7,10 @@ on:
   workflow_dispatch: {}
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+  compile:
+    runs-on: ubuntu-latest
+    outputs:
+      dist-path: ${{ steps.upload.outputs.path }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,7 +27,36 @@ jobs:
       - name: Build source
         run: npm run build
 
-      - name: Build package
+      - name: Upload built dist
+        uses: actions/upload-artifact@v7
+        id: upload
+        with:
+          name: compiled-dist
+          path: dist
+
+  package:
+    needs: compile
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Download compiled dist
+        uses: actions/download-artifact@v8
+        with:
+          name: compiled-dist
+          path: dist
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Package application
         run: |
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
             npm run dist:linux
