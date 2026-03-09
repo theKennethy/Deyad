@@ -1,4 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain, net, shell } from 'electron';
+
+// disable hardware acceleration to avoid GPU spikes when rendering chat
+app.disableHardwareAcceleration();
 import os from 'os';
 // pty will be required at runtime to avoid bundler issues
 import { v4 as uuidv4 } from 'uuid';
