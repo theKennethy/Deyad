@@ -22,8 +22,11 @@ describe('Sidebar', () => {
     onDeleteApp: vi.fn(),
     onRenameApp: vi.fn(),
     onExportApp: vi.fn(),
+    onDeployApp: vi.fn(),
     onImportApp: vi.fn(),
     onOpenSettings: vi.fn(),
+    onOpenTaskQueue: vi.fn(),
+    activeTasks: 0,
   };
 
   beforeEach(() => vi.clearAllMocks());

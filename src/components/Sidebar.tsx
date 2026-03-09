@@ -12,11 +12,14 @@ interface Props {
   onDeleteApp: (id: string) => void;
   onRenameApp: (id: string, newName: string) => void;
   onExportApp: (id: string) => void;
+  onDeployApp: () => void;
   onImportApp: () => void;
   onOpenSettings: () => void;
+  onOpenTaskQueue: () => void;
+  activeTasks: number;
 }
 
-export default function Sidebar({ apps, selectedApp, onSelectApp, onNewApp, onDeleteApp, onRenameApp, onExportApp, onImportApp, onOpenSettings }: Props) {
+export default function Sidebar({ apps, selectedApp, onSelectApp, onNewApp, onDeleteApp, onRenameApp, onExportApp, onDeployApp, onImportApp, onOpenSettings, onOpenTaskQueue, activeTasks }: Props) {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
@@ -106,6 +109,15 @@ export default function Sidebar({ apps, selectedApp, onSelectApp, onNewApp, onDe
             >
               Export
             </button>
+            {selectedApp?.id === app.id && (
+              <button
+                className="sidebar-deploy"
+                onClick={(e) => { e.stopPropagation(); onDeployApp(); }}
+                title="Deploy to web"
+              >
+                Deploy
+              </button>
+            )}
             <button
               className={`sidebar-delete ${confirmDelete === app.id ? 'confirm' : ''}`}
               onClick={(e) => handleDelete(e, app.id)}
@@ -118,6 +130,9 @@ export default function Sidebar({ apps, selectedApp, onSelectApp, onNewApp, onDe
       </nav>
 
       <div className="sidebar-footer">
+        <button className="sidebar-tasks-btn" onClick={onOpenTaskQueue} title="Background task queue">
+          Tasks{activeTasks > 0 && <span className="task-badge">{activeTasks}</span>}
+        </button>
         <button className="sidebar-settings-btn" onClick={onOpenSettings} title="Settings">
           Settings
         </button>

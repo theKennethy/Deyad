@@ -8,6 +8,9 @@ import DatabasePanel from './components/DatabasePanel';
 import NewAppModal from './components/NewAppModal';
 import ImportModal from './components/ImportModal';
 import SettingsModal from './components/SettingsModal';
+import DeployModal from './components/DeployModal';
+import TaskQueuePanel from './components/TaskQueuePanel';
+import { taskQueue } from './lib/taskQueue';
 
 export interface AppProject {
   id: string;
@@ -29,6 +32,9 @@ export default function App() {
   const [showNewAppModal, setShowNewAppModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showDeployModal, setShowDeployModal] = useState(false);
+  const [showTaskQueue, setShowTaskQueue] = useState(false);
+  const [activeTasks, setActiveTasks] = useState(0);
   const [dbStatus, setDbStatus] = useState<'none' | 'running' | 'stopped'>('none');
   const [rightTab, setRightTab] = useState<RightTab>('editor');
   const [canRevert, setCanRevert] = useState(false);
@@ -51,6 +57,17 @@ export default function App() {
   // Load app list on mount
   useEffect(() => {
     loadApps();
+  }, []);
+
+  // Subscribe to task queue changes for activity badge
+  useEffect(() => {
+    const unsub = taskQueue.subscribe(() => {
+      const active = taskQueue.getAll().filter((t) => t.status === 'running' || t.status === 'queued');
+      setActiveTasks(active.length);
+    });
+    // Set initial count
+    setActiveTasks(taskQueue.getAll().filter((t) => t.status === 'running' || t.status === 'queued').length);
+    return unsub;
   }, []);
 
   // persist when sizes change (sidebar & right panel) and update CSS variables
@@ -279,8 +296,11 @@ export default function App() {
           onDeleteApp={handleDeleteApp}
           onRenameApp={handleRenameApp}
           onExportApp={handleExportApp}
+          onDeployApp={() => setShowDeployModal(true)}
           onImportApp={() => setShowImportModal(true)}
           onOpenSettings={() => setShowSettings(true)}
+          onOpenTaskQueue={() => setShowTaskQueue(true)}
+          activeTasks={activeTasks}
         />
       </aside>
 
@@ -405,6 +425,31 @@ export default function App() {
         <ImportModal
           onClose={() => setShowImportModal(false)}
           onImport={handleImportApp}
+        />
+      )}
+
+      {showDeployModal && selectedApp && (
+        <DeployModal
+          appId={selectedApp.id}
+          appName={selectedApp.name}
+          appType={selectedApp.appType}
+          onClose={() => setShowDeployModal(false)}
+        />
+      )}
+
+      {showTaskQueue && selectedApp && (
+        <TaskQueuePanel
+          appId={selectedApp.id}
+          appName={selectedApp.name}
+          appType={selectedApp.appType}
+          dbProvider={selectedApp.dbProvider}
+          dbStatus={dbStatus}
+          model=""
+          onClose={() => setShowTaskQueue(false)}
+          onRefreshFiles={async () => {
+            const files = await window.deyad.readFiles(selectedApp.id);
+            setAppFiles(files);
+          }}
         />
       )}
 
