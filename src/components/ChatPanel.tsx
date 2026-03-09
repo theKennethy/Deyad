@@ -4,6 +4,9 @@ import remarkGfm from 'remark-gfm';
 import type { AppProject } from '../App';
 import { buildSmartContext } from '../lib/contextBuilder';
 import { extractFilesFromResponse, FRONTEND_SYSTEM_PROMPT, getFullStackSystemPrompt, PLANNING_SYSTEM_PROMPT, PLAN_EXECUTION_PROMPT } from '../lib/codeParser';
+import { runAgentLoop } from '../lib/agentLoop';
+import { stripToolMarkup } from '../lib/agentTools';
+import type { ToolResult } from '../lib/agentTools';
 
 interface UiMessage {
   id: string;
@@ -45,17 +48,21 @@ export default function ChatPanel({
   const [selectedModel, setSelectedModel] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [planningMode, setPlanningMode] = useState(false);
+  const [agentMode, setAgentMode] = useState(false);
+  const [agentSteps, setAgentSteps] = useState<Array<{ type: 'tool' | 'result'; text: string }>>([]);
   const [pendingPlan, setPendingPlan] = useState<string | null>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const streamBuf = useRef('');
   const assistantIdRef = useRef('');
   const streamCleanupRef = useRef<(() => void) | null>(null);
+  const agentAbortRef = useRef<(() => void) | null>(null);
 
   // Clean up stream listeners on unmount
   useEffect(() => {
     return () => {
       streamCleanupRef.current?.();
+      agentAbortRef.current?.();
     };
   }, []);
 
@@ -159,6 +166,24 @@ export default function ChatPanel({
         role: 'system' as const,
         content: `Here are the current project files:\n\n${context}`,
       });
+    }
+
+    // If the database is running, fetch and inject the live schema
+    if (dbStatus === 'running' && app.appType === 'fullstack') {
+      try {
+        const schema = await window.deyad.dbDescribe(app.id);
+        if (schema.tables.length > 0) {
+          const schemaText = schema.tables
+            .map((t) => `  ${t.name}: ${t.columns.join(', ')}`)
+            .join('\n');
+          ollamaMessages.push({
+            role: 'system' as const,
+            content: `The database is running (${app.dbProvider ?? 'mysql'}). Current schema:\n${schemaText}\n\nUse this schema when generating backend code, API routes, or Prisma queries.`,
+          });
+        }
+      } catch {
+        // DB describe failed — continue without schema context
+      }
     }
 
     // Include recent conversation history (last 10 messages for context window)
@@ -265,10 +290,111 @@ export default function ChatPanel({
     streamCleanupRef.current = null;
   };
 
+  const sendAgentMessage = async (overrideText?: string) => {
+    const text = (overrideText ?? input).trim();
+    if (!text || streaming) return;
+
+    if (!selectedModel) {
+      setError('No model selected. Make sure Ollama is running and has at least one model.');
+      return;
+    }
+
+    setError(null);
+    setInput('');
+    setAgentSteps([]);
+
+    // Add user message
+    const userMsg: UiMessage = { id: Date.now().toString(), role: 'user', content: text };
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
+
+    // Add placeholder assistant message
+    const assistantId = (Date.now() + 1).toString();
+    assistantIdRef.current = assistantId;
+    setStreaming(true);
+
+    const assistantMsg: UiMessage = {
+      id: assistantId,
+      role: 'assistant',
+      content: '',
+      model: selectedModel,
+    };
+    setMessages((prev) => [...prev, assistantMsg]);
+
+    // Build conversation history for agent
+    const history = newMessages.slice(-8).map((m) => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.content,
+    }));
+
+    const abort = runAgentLoop({
+      appId: app.id,
+      appType: app.appType,
+      dbProvider: app.dbProvider,
+      dbStatus,
+      model: selectedModel,
+      userMessage: text,
+      appFiles,
+      selectedFile,
+      history,
+      callbacks: {
+        onContent: (fullText: string) => {
+          const display = stripToolMarkup(fullText);
+          setMessages((prev) =>
+            prev.map((m) => (m.id === assistantId ? { ...m, content: display } : m)),
+          );
+        },
+        onToolStart: (toolName: string, params: Record<string, string>) => {
+          const summary = toolName === 'run_command' ? `${toolName}: ${params.command ?? ''}` :
+                          toolName === 'read_file' ? `${toolName}: ${params.path ?? ''}` :
+                          toolName === 'write_files' ? `${toolName}: ${params.path || Object.keys(params).filter(k => k.endsWith('_path')).map(k => params[k]).join(', ')}` :
+                          toolName;
+          setAgentSteps((prev) => [...prev, { type: 'tool', text: summary }]);
+        },
+        onToolResult: (result: ToolResult) => {
+          const statusIcon = result.success ? '\u2713' : '\u2717';
+          const preview = result.output.length > 120 ? result.output.slice(0, 120) + '...' : result.output;
+          setAgentSteps((prev) => [...prev, { type: 'result', text: `${statusIcon} ${result.tool}: ${preview}` }]);
+        },
+        onFilesWritten: async (files: Record<string, string>) => {
+          onFilesUpdated(files);
+          // Update the assistant message with generated file info
+          const paths = Object.keys(files);
+          setMessages((prev) =>
+            prev.map((m) => {
+              if (m.id === assistantId) {
+                const existing = m.filesGenerated || [];
+                return { ...m, filesGenerated: [...new Set([...existing, ...paths])] };
+              }
+              return m;
+            }),
+          );
+        },
+        onDone: () => {
+          setStreaming(false);
+          agentAbortRef.current = null;
+          // Save messages
+          setMessages((prev) => {
+            saveMessages(prev);
+            return prev;
+          });
+        },
+        onError: (error: string) => {
+          setError(`Agent error: ${error}`);
+          setStreaming(false);
+          agentAbortRef.current = null;
+        },
+      },
+    });
+
+    agentAbortRef.current = abort;
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
+      if (agentMode) sendAgentMessage();
+      else sendMessage();
     }
   };
 
@@ -310,10 +436,17 @@ export default function ChatPanel({
           )}
           <button
             className={`btn-plan-mode ${planningMode ? 'active' : ''}`}
-            onClick={() => setPlanningMode((v) => !v)}
+            onClick={() => { setPlanningMode((v) => !v); if (agentMode) setAgentMode(false); }}
             title="Toggle planning mode"
           >
             {planningMode ? 'Plan ON' : 'Plan'}
+          </button>
+          <button
+            className={`btn-agent-mode ${agentMode ? 'active' : ''}`}
+            onClick={() => { setAgentMode((v) => !v); if (planningMode) setPlanningMode(false); }}
+            title="Toggle autonomous agent mode"
+          >
+            {agentMode ? 'Agent ON' : 'Agent'}
           </button>
           {canRevert && (
             <button className="btn-db" onClick={onRevert} title="Undo last AI change">
@@ -418,6 +551,19 @@ export default function ChatPanel({
           </div>
         ))}
 
+        {/* Agent mode action log */}
+        {agentMode && agentSteps.length > 0 && (
+          <div className="agent-steps">
+            <div className="agent-steps-header">Agent Actions</div>
+            {agentSteps.map((step, i) => (
+              <div key={i} className={`agent-step agent-step-${step.type}`}>
+                <span className="agent-step-icon">{step.type === 'tool' ? '🔧' : '📋'}</span>
+                <span className="agent-step-text">{step.text}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {streaming && (
           <div className="streaming-indicator">
             <div className="dot" />
@@ -441,8 +587,8 @@ export default function ChatPanel({
           placeholder={streaming ? 'AI is responding…' : 'Describe what you want to build…'}
           disabled={streaming}
         />
-        <button className="btn-send" onClick={() => sendMessage()} disabled={streaming || !input.trim()}>
-          ↑
+        <button className="btn-send" onClick={() => agentMode ? sendAgentMessage() : sendMessage()} disabled={streaming || !input.trim()}>
+          {agentMode ? '⚡' : '↑'}
         </button>
       </div>
     </div>

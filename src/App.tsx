@@ -33,6 +33,7 @@ export default function App() {
   const [rightTab, setRightTab] = useState<RightTab>('editor');
   const [canRevert, setCanRevert] = useState(false);
   const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
+  const [mobilePanel, setMobilePanel] = useState<'sidebar' | 'chat' | 'right'>('chat');
 
   // resizable panels (persist sizes in localStorage)
   const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
@@ -263,7 +264,7 @@ export default function App() {
 
   return (
     <div
-      className="app-layout"
+      className={`app-layout mobile-show-${mobilePanel}`}
       style={{
         gridTemplateColumns: `${sidebarWidth}px 4px 1fr 4px ${rightWidth}px`,
       }}
@@ -406,6 +407,31 @@ export default function App() {
           onImport={handleImportApp}
         />
       )}
+
+      {/* Mobile bottom navigation */}
+      <nav className="mobile-nav">
+        <button
+          className={`mobile-nav-btn ${mobilePanel === 'sidebar' ? 'active' : ''}`}
+          onClick={() => setMobilePanel('sidebar')}
+        >
+          <span className="mobile-nav-icon">☰</span>
+          <span className="mobile-nav-label">Apps</span>
+        </button>
+        <button
+          className={`mobile-nav-btn ${mobilePanel === 'chat' ? 'active' : ''}`}
+          onClick={() => setMobilePanel('chat')}
+        >
+          <span className="mobile-nav-icon">💬</span>
+          <span className="mobile-nav-label">Chat</span>
+        </button>
+        <button
+          className={`mobile-nav-btn ${mobilePanel === 'right' ? 'active' : ''}`}
+          onClick={() => setMobilePanel('right')}
+        >
+          <span className="mobile-nav-icon">📁</span>
+          <span className="mobile-nav-label">{rightTab === 'preview' ? 'Preview' : rightTab === 'terminal' ? 'Term' : rightTab === 'database' ? 'DB' : 'Files'}</span>
+        </button>
+      </nav>
     </div>
   );
 }
