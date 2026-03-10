@@ -42,15 +42,19 @@ export default function DatabasePanel({ app, dbStatus }: Props) {
     if (dbStatus !== 'running') { setPortReady(false); return; }
     let cancelled = false;
     const check = () => {
-      fetch(guiUrl, { mode: 'no-cors' })
-        .then(() => { if (!cancelled) setPortReady(true); })
+      window.deyad.portCheck(guiPort)
+        .then((open) => {
+          if (cancelled) return;
+          if (open) setPortReady(true);
+          else pollRef.current = setTimeout(check, 1500);
+        })
         .catch(() => {
           if (!cancelled) pollRef.current = setTimeout(check, 1500);
         });
     };
     check();
     return () => { cancelled = true; if (pollRef.current) clearTimeout(pollRef.current); };
-  }, [dbStatus, guiUrl]);
+  }, [dbStatus, guiPort]);
 
   useEffect(() => {
     if (app.appType !== 'fullstack') return;

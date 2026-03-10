@@ -106,6 +106,7 @@ interface DeyadAPI {
   dbStart(appId: string): Promise<{ success: boolean; error?: string }>;
   dbStop(appId: string): Promise<{ success: boolean; error?: string }>;
   dbStatus(appId: string): Promise<{ status: 'running' | 'stopped' | 'none' }>;
+  portCheck(port: number): Promise<boolean>;
   onDbStatus(cb: (payload: { appId: string; status: string }) => void): () => void;
 
   // Settings

@@ -135,6 +135,9 @@ contextBridge.exposeInMainWorld('deyad', {
   dbStatus: (appId: string): Promise<{ status: 'running' | 'stopped' | 'none' }> =>
     ipcRenderer.invoke('docker:db-status', appId),
 
+  portCheck: (port: number): Promise<boolean> =>
+    ipcRenderer.invoke('docker:port-check', port),
+
   onDbStatus: (cb: (payload: { appId: string; status: string }) => void) => {
     const handler = (_: Electron.IpcRendererEvent, payload: { appId: string; status: string }) => cb(payload);
     ipcRenderer.on('docker:db-status', handler);

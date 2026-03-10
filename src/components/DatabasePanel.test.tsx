@@ -28,9 +28,8 @@ describe('DatabasePanel', () => {
   beforeEach(() => {
     (window as any).deyad = {
       dbDescribe: vi.fn().mockResolvedValue(simpleSchema),
+      portCheck: vi.fn().mockResolvedValue(true),
     };
-    // Mock fetch to simulate port readiness
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response()));
   });
 
   afterEach(() => {
@@ -72,7 +71,7 @@ describe('DatabasePanel', () => {
   });
 
   it('shows starting placeholder when port not ready', () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('ECONNREFUSED')));
+    (window as any).deyad.portCheck = vi.fn().mockResolvedValue(false);
     render(<DatabasePanel app={fullApp} dbStatus="running" />);
     expect(screen.getByText(/starting phpmyadmin/i)).toBeTruthy();
   });

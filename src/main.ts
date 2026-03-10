@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import path from 'node:path';
 import fs from 'node:fs';
 import { execFile, spawn } from 'node:child_process';
+import nodeNet from 'node:net';
 import { promisify } from 'node:util';
 import type { ChildProcess } from 'node:child_process';
 import started from 'electron-squirrel-startup';
@@ -697,6 +698,15 @@ ipcMain.handle('docker:db-status', async (_event, appId: string) => {
     const running = containers.some((c: { State?: string }) => c?.State === 'running');
     return { status: running ? 'running' : 'stopped' };
   } catch { return { status: 'stopped' }; }
+});
+
+ipcMain.handle('docker:port-check', (_event, port: number) => {
+  return new Promise<boolean>((resolve) => {
+    const sock = nodeNet.createConnection({ port, host: '127.0.0.1' });
+    sock.once('connect', () => { sock.destroy(); resolve(true); });
+    sock.once('error', () => { resolve(false); });
+    sock.setTimeout(2000, () => { sock.destroy(); resolve(false); });
+  });
 });
 
 // ── Settings ────────────────────────────────────────────────────────────────
