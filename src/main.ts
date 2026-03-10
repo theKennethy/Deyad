@@ -659,7 +659,8 @@ ipcMain.handle('docker:db-start', async (event, appId: string) => {
   }
   try {
     const engine = await getContainerEngine();
-    await execFileAsync(engine, ['compose', '-f', composeFile, 'up', '-d', '--wait'], { timeout: 120000, env: composeEnv() });
+    // docker-compose v1 doesn't support --wait, so use plain -d
+    await execFileAsync(engine, ['compose', '-f', composeFile, 'up', '-d'], { timeout: 120000, env: composeEnv() });
     event.sender.send('docker:db-status', { appId, status: 'running' });
     return { success: true };
   } catch (err: unknown) {
