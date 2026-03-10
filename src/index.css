@@ -2414,6 +2414,15 @@ body {
   transition: background 0.15s;
 }
 .btn-auto-fix:hover { background: #dc2626; }
+.auto-verify-status {
+  font-size: 12px;
+  color: #fbbf24;
+  animation: pulse-verify 1.5s ease-in-out infinite;
+}
+@keyframes pulse-verify {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
 .btn-dismiss-errors {
   background: none;
   border: none;

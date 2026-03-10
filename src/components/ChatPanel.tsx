@@ -63,6 +63,9 @@ export default function ChatPanel({
   const agentAbortRef = useRef<(() => void) | null>(null);
   const [detectedErrors, setDetectedErrors] = useState<DetectedError[]>([]);
   const [tokenCount, setTokenCount] = useState(0);
+  const autoFixAttemptsRef = useRef(0);
+  const autoFixTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const MAX_AUTO_FIX_ATTEMPTS = 3;
 
   // Clean up stream listeners on unmount
   useEffect(() => {
@@ -88,6 +91,25 @@ export default function ChatPanel({
     });
     return unsub;
   }, [app.id]);
+
+  // Auto-verify: in agent mode, automatically send detected errors to AI for fixing
+  useEffect(() => {
+    if (!agentMode || streaming || detectedErrors.length === 0) return;
+    if (autoFixAttemptsRef.current >= MAX_AUTO_FIX_ATTEMPTS) return;
+
+    // Debounce 2s to batch errors from dev server
+    if (autoFixTimerRef.current) clearTimeout(autoFixTimerRef.current);
+    autoFixTimerRef.current = setTimeout(() => {
+      autoFixAttemptsRef.current++;
+      const prompt = buildErrorFixPrompt(detectedErrors, appFiles);
+      setDetectedErrors([]);
+      sendAgentMessage(prompt);
+    }, 2000);
+
+    return () => {
+      if (autoFixTimerRef.current) clearTimeout(autoFixTimerRef.current);
+    };
+  }, [agentMode, streaming, detectedErrors, appFiles]);
 
   // Estimate token count from conversation
   useEffect(() => {
@@ -373,6 +395,8 @@ export default function ChatPanel({
     setError(null);
     setInput('');
     setAgentSteps([]);
+    // Reset auto-fix counter on new user-initiated message
+    if (!overrideText) autoFixAttemptsRef.current = 0;
 
     // Add user message
     const userMsg: UiMessage = { id: Date.now().toString(), role: 'user', content: text };
@@ -573,9 +597,13 @@ export default function ChatPanel({
           <div className="error-detection-header">
             <span>⚠️ {detectedErrors.length} error{detectedErrors.length > 1 ? 's' : ''} detected</span>
             <div className="error-detection-actions">
-              <button className="btn-auto-fix" onClick={handleAutoFix}>
-                🔧 Auto-fix
-              </button>
+              {agentMode && autoFixAttemptsRef.current < MAX_AUTO_FIX_ATTEMPTS ? (
+                <span className="auto-verify-status">🔄 Auto-fixing ({autoFixAttemptsRef.current + 1}/{MAX_AUTO_FIX_ATTEMPTS})…</span>
+              ) : (
+                <button className="btn-auto-fix" onClick={handleAutoFix}>
+                  🔧 Auto-fix
+                </button>
+              )}
               <button className="btn-dismiss-errors" onClick={handleDismissErrors}>
                 ✕
               </button>
