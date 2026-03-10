@@ -9,6 +9,7 @@ export default function SettingsModal({ onClose }: Props) {
   const [defaultModel, setDefaultModel] = useState('');
   const [autocompleteEnabled, setAutocompleteEnabled] = useState(false);
   const [completionModel, setCompletionModel] = useState('');
+  const [embedModel, setEmbedModel] = useState('');
   const [models, setModels] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -24,6 +25,7 @@ export default function SettingsModal({ onClose }: Props) {
     setDefaultModel(settings.defaultModel);
     setAutocompleteEnabled(settings.autocompleteEnabled ?? false);
     setCompletionModel(settings.completionModel ?? '');
+    setEmbedModel(settings.embedModel ?? '');
     loadModels();
   };
 
@@ -42,6 +44,7 @@ export default function SettingsModal({ onClose }: Props) {
       defaultModel,
       autocompleteEnabled,
       completionModel,
+      embedModel,
     });
     setSaving(false);
     setSaved(true);
@@ -134,6 +137,24 @@ export default function SettingsModal({ onClose }: Props) {
               <span className="settings-hint">Smaller/faster models like qwen2.5-coder:1.5b work best for autocomplete</span>
             </div>
           )}
+
+          <hr className="settings-divider" />
+
+          <div className="form-field">
+            <label htmlFor="embed-model">Embedding Model (RAG)</label>
+            <select
+              id="embed-model"
+              className="model-select settings-model-select"
+              value={embedModel}
+              onChange={(e) => setEmbedModel(e.target.value)}
+            >
+              <option value="">None (TF-IDF only)</option>
+              {models.map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+            <span className="settings-hint">Enable RAG for smarter context. Use nomic-embed-text or similar embedding model.</span>
+          </div>
 
           <div className="modal-actions">
             <button type="button" className="btn-secondary" onClick={onClose}>

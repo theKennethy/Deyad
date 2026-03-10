@@ -8,7 +8,8 @@
 
 import { parseToolCalls, executeTool, isDone, stripToolMarkup, AGENT_TOOLS_DESCRIPTION } from './agentTools';
 import type { ToolResult } from './agentTools';
-import { buildSmartContext } from './contextBuilder';
+import { buildSmartContext, buildSmartContextWithRAG } from './contextBuilder';
+import { embedChunks } from './codebaseIndexer';
 
 /** Maximum autonomous iterations before forcing a stop. */
 const MAX_ITERATIONS = 30;
@@ -93,6 +94,8 @@ export interface AgentOptions {
   selectedFile?: string | null;
   /** Previous conversation messages (for continuity). */
   history: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>;
+  /** Ollama embedding model name for RAG retrieval (optional). */
+  embedModel?: string;
   callbacks: AgentCallbacks;
 }
 
@@ -173,19 +176,33 @@ function streamOllamaTurn(
  * Returns a cleanup function that can abort the loop.
  */
 export function runAgentLoop(options: AgentOptions): () => void {
-  const { appId, appType, dbProvider, dbStatus, model, userMessage, appFiles, selectedFile, history, callbacks } = options;
+  const { appId, appType, dbProvider, dbStatus, model, userMessage, appFiles, selectedFile, history, embedModel, callbacks } = options;
   let aborted = false;
 
   const abort = () => { aborted = true; };
 
   (async () => {
     try {
-      // Build initial context
-      const context = buildSmartContext({
-        files: appFiles,
-        selectedFile,
-        userMessage,
-      });
+      // Trigger embedding of chunks in background (non-blocking for first run)
+      if (embedModel) {
+        embedChunks(appId, appFiles, embedModel).catch(() => {});
+      }
+
+      // Build initial context (with RAG chunks if embeddings are available)
+      const context = embedModel
+        ? await buildSmartContextWithRAG({
+            files: appFiles,
+            selectedFile,
+            userMessage,
+            appId,
+            embedModel,
+          })
+        : buildSmartContext({
+            files: appFiles,
+            selectedFile,
+            userMessage,
+            appId,
+          });
 
       // Assemble conversation
       const messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }> = [
@@ -278,17 +295,31 @@ export function runAgentLoop(options: AgentOptions): () => void {
           if (call.name === 'edit_file' && result.success) {
             filesChanged = true;
           }
+
+          // multi_edit modifies files
+          if (call.name === 'multi_edit' && result.success) {
+            filesChanged = true;
+          }
         }
 
         // Re-read project files after writes so the next iteration sees updated code
         if (filesChanged) {
           try {
             const freshFiles = await window.deyad.readFiles(appId);
-            const freshContext = buildSmartContext({
-              files: freshFiles,
-              selectedFile,
-              userMessage,
-            });
+            const freshContext = embedModel
+              ? await buildSmartContextWithRAG({
+                  files: freshFiles,
+                  selectedFile,
+                  userMessage,
+                  appId,
+                  embedModel,
+                })
+              : buildSmartContext({
+                  files: freshFiles,
+                  selectedFile,
+                  userMessage,
+                  appId,
+                });
             // Replace the stale project files context message (index 1)
             if (messages.length > 1 && messages[1].role === 'system' && messages[1].content.startsWith('Current project files:')) {
               messages[1] = { role: 'system', content: `Current project files:\n\n${freshContext}` };

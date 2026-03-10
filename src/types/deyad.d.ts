@@ -44,6 +44,7 @@ interface DeyadSettings {
   defaultModel: string;
   autocompleteEnabled: boolean;
   completionModel: string;
+  embedModel: string;
 }
 
 interface GitLogEntry {

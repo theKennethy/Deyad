@@ -66,6 +66,7 @@ export default function ChatPanel({
   const autoFixAttemptsRef = useRef(0);
   const autoFixTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const MAX_AUTO_FIX_ATTEMPTS = 3;
+  const embedModelRef = useRef('');
 
   // Clean up stream listeners on unmount
   useEffect(() => {
@@ -164,6 +165,9 @@ export default function ChatPanel({
         setSelectedModel(settings.defaultModel);
       } else if (names.length > 0) {
         setSelectedModel(names[0]);
+      }
+      if (settings.embedModel) {
+        embedModelRef.current = settings.embedModel;
       }
     } catch {
       setError('Could not connect to Ollama. Make sure it is running.');
@@ -432,6 +436,7 @@ export default function ChatPanel({
       appFiles,
       selectedFile,
       history,
+      embedModel: embedModelRef.current || undefined,
       callbacks: {
         onContent: (fullText: string) => {
           const display = stripToolMarkup(fullText);

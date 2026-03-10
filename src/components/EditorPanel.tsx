@@ -222,28 +222,55 @@ export default function EditorPanel({ files, selectedFile, onSelectFile, onOpenF
           const completionModelName = completionModelRef.current;
           if (!completionModelName) return { items: [] };
 
-          // Debounce: wait 500ms of inactivity before requesting
+          // Debounce: wait 400ms of inactivity before requesting
           if (debounceTimer) clearTimeout(debounceTimer);
           const items = await new Promise<{ insertText: string }[]>((resolve) => {
             debounceTimer = setTimeout(async () => {
               if (token.isCancellationRequested) { resolve([]); return; }
               try {
-                const textUntilPosition = model.getValueInRange({
-                  startLineNumber: Math.max(1, position.lineNumber - 50),
+                // Gather prefix: up to 100 lines before cursor
+                const prefixRange = {
+                  startLineNumber: Math.max(1, position.lineNumber - 100),
                   startColumn: 1,
                   endLineNumber: position.lineNumber,
                   endColumn: position.column,
-                });
+                };
+                const textUntilPosition = model.getValueInRange(prefixRange);
+
+                // Gather suffix: up to 30 lines after cursor
+                const suffixEnd = Math.min(model.getLineCount(), position.lineNumber + 30);
                 const textAfterPosition = model.getValueInRange({
                   startLineNumber: position.lineNumber,
                   startColumn: position.column,
-                  endLineNumber: Math.min(model.getLineCount(), position.lineNumber + 10),
-                  endColumn: model.getLineMaxColumn(Math.min(model.getLineCount(), position.lineNumber + 10)),
+                  endLineNumber: suffixEnd,
+                  endColumn: model.getLineMaxColumn(suffixEnd),
                 });
 
-                // Build FIM prompt with file path context
+                // Build repo-context header: extract imports from current file to hint types/modules
+                const fullText = model.getValue();
+                const importLines = fullText.split('\n')
+                  .filter((l: string) => /^\s*(import|from|require)/.test(l))
+                  .slice(0, 15)
+                  .join('\n');
+
                 const filePath = selectedFileRef.current || '';
-                const prefix = `// File: ${filePath}\n${textUntilPosition}`;
+                const ext = filePath.split('.').pop() || '';
+
+                // Language-aware stop sequences
+                const stopByExt: Record<string, string[]> = {
+                  ts: ['\n\n', '// ---', 'export ', '\nclass ', '\ninterface '],
+                  tsx: ['\n\n', '// ---', 'export ', '\nclass ', '\ninterface ', '\nfunction '],
+                  js: ['\n\n', '// ---', 'export ', '\nclass ', '\nfunction '],
+                  jsx: ['\n\n', '// ---', 'export ', '\nclass ', '\nfunction '],
+                  py: ['\n\n', '\ndef ', '\nclass ', '# ---'],
+                  css: ['\n\n', '\n}\n'],
+                };
+                const stop = stopByExt[ext] || ['\n\n'];
+
+                // Build FIM prompt with repo context
+                const prefix = importLines
+                  ? `// File: ${filePath}\n// Imports context:\n${importLines}\n// ---\n${textUntilPosition}`
+                  : `// File: ${filePath}\n${textUntilPosition}`;
 
                 if (token.isCancellationRequested) { resolve([]); return; }
 
@@ -251,13 +278,14 @@ export default function EditorPanel({ files, selectedFile, onSelectFile, onOpenF
                   completionModelName,
                   prefix,
                   textAfterPosition || undefined,
+                  stop,
                 );
                 if (token.isCancellationRequested || !completion.trim()) { resolve([]); return; }
                 resolve([{ insertText: completion }]);
               } catch {
                 resolve([]);
               }
-            }, 500);
+            }, 400);
             token.onCancellationRequested(() => {
               if (debounceTimer) clearTimeout(debounceTimer);
               resolve([]);

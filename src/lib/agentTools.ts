@@ -166,6 +166,65 @@ export async function executeTool(
         return { tool: call.name, success: true, output: `Edited ${filePath} (replaced 1 occurrence).` };
       }
 
+      case 'multi_edit': {
+        // Parse indexed edit operations: edit_0_path, edit_0_old_string, edit_0_new_string, ...
+        const edits: Array<{ path: string; oldStr: string; newStr: string }> = [];
+        for (let i = 0; i < 20; i++) {
+          const p = call.params[`edit_${i}_path`];
+          const o = call.params[`edit_${i}_old_string`];
+          const n = call.params[`edit_${i}_new_string`];
+          if (!p) break;
+          if (o === undefined || n === undefined) {
+            return { tool: call.name, success: false, output: `Edit ${i}: missing old_string or new_string.` };
+          }
+          edits.push({ path: p, oldStr: o, newStr: n });
+        }
+        if (edits.length === 0) {
+          return { tool: call.name, success: false, output: 'No edits specified. Use edit_0_path, edit_0_old_string, edit_0_new_string, ...' };
+        }
+
+        const files = await window.deyad.readFiles(appId);
+        const writeMap: Record<string, string> = {};
+        const results: string[] = [];
+        let hasError = false;
+
+        for (let i = 0; i < edits.length; i++) {
+          const { path: fp, oldStr: o, newStr: n } = edits[i];
+          // Use already-modified version if we edited this file earlier in the batch
+          const content = writeMap[fp] ?? files[fp];
+          if (content === undefined) {
+            results.push(`Edit ${i} (${fp}): FAILED — file not found`);
+            hasError = true;
+            continue;
+          }
+          const occurrences = content.split(o).length - 1;
+          if (occurrences === 0) {
+            results.push(`Edit ${i} (${fp}): FAILED — old_string not found`);
+            hasError = true;
+            continue;
+          }
+          if (occurrences > 1) {
+            results.push(`Edit ${i} (${fp}): FAILED — old_string found ${occurrences} times (must be unique)`);
+            hasError = true;
+            continue;
+          }
+          writeMap[fp] = content.replace(o, n);
+          results.push(`Edit ${i} (${fp}): OK`);
+        }
+
+        // Write all modified files at once
+        if (Object.keys(writeMap).length > 0) {
+          await window.deyad.writeFiles(appId, writeMap);
+        }
+
+        const editedCount = results.filter((r) => r.includes(': OK')).length;
+        return {
+          tool: call.name,
+          success: !hasError,
+          output: `Applied ${editedCount}/${edits.length} edits:\n${results.join('\n')}`,
+        };
+      }
+
       default:
         return { tool: call.name, success: false, output: `Unknown tool: ${call.name}` };
     }
@@ -277,6 +336,17 @@ Available tools:
    <param name="new_string">replacement text</param>
    Prefer edit_file over write_files when you only need to change a small part of a file.
    Include enough surrounding context in old_string so it matches exactly once.
+
+8. **multi_edit** — Apply multiple surgical edits across one or more files in a single operation.
+   Use indexed params for each edit:
+   <param name="edit_0_path">path/to/first/file</param>
+   <param name="edit_0_old_string">exact text to find in first file</param>
+   <param name="edit_0_new_string">replacement for first file</param>
+   <param name="edit_1_path">path/to/second/file</param>
+   <param name="edit_1_old_string">exact text to find in second file</param>
+   <param name="edit_1_new_string">replacement for second file</param>
+   Supports up to 20 edits. Edits to the same file are applied sequentially (each sees previous edits).
+   Use this instead of multiple edit_file calls when you need to change several files at once.
 
 After your tool calls, you will receive results in <tool_result> blocks.
 You can make multiple tool calls in a single response.

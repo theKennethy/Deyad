@@ -8,7 +8,7 @@
  * 4. Respects a total token budget
  */
 
-import { getOrBuildIndex, rankFilesByQuery } from './codebaseIndexer';
+import { getOrBuildIndex, rankFilesByQuery, retrieveChunks } from './codebaseIndexer';
 
 /** Approximate tokens per character (conservative estimate for code). */
 const CHARS_PER_TOKEN = 3.5;
@@ -37,6 +37,8 @@ export interface ContextOptions {
   userMessage?: string;
   /** App ID for TF-IDF index lookup. */
   appId?: string;
+  /** Ollama embedding model for RAG chunk retrieval. */
+  embedModel?: string;
 }
 
 interface ScoredFile {
@@ -127,7 +129,7 @@ function extractKeywords(message: string): string[] {
  * and providing summaries for the rest.
  */
 export function buildSmartContext(options: ContextOptions): string {
-  const { files, selectedFile, userMessage, appId } = options;
+  const { files, selectedFile, userMessage, appId, embedModel } = options;
   const entries = Object.entries(files);
 
   if (entries.length === 0) return '';
@@ -196,6 +198,33 @@ export function buildSmartContext(options: ContextOptions): string {
   const header = `**Project: ${entries.length} files total, ${fullCount} shown in full, ${Math.min(remaining.length, MAX_SUMMARY_FILES)} summarized.**\n`;
 
   return header + '\n' + parts.join('\n\n');
+}
+
+/**
+ * Async version of buildSmartContext that also retrieves RAG chunks
+ * when embeddings are available. Returns enriched context with
+ * the most relevant code snippets for the query.
+ */
+export async function buildSmartContextWithRAG(options: ContextOptions): Promise<string> {
+  const base = buildSmartContext(options);
+  const { files, userMessage, appId, embedModel } = options;
+
+  // If we have embeddings, retrieve relevant chunks and prepend them
+  if (userMessage && appId && embedModel) {
+    try {
+      const chunks = await retrieveChunks(appId, files, userMessage, embedModel, 10);
+      if (chunks.length > 0) {
+        const chunkSection = chunks
+          .map((c) => `// ${c.chunk.path} (L${c.chunk.startLine}-${c.chunk.endLine}) [relevance: ${(c.score * 100).toFixed(0)}%]\n${c.chunk.text.split('\n').slice(1).join('\n')}`)
+          .join('\n\n');
+        return `### Relevant code snippets (RAG):\n\`\`\`\n${chunkSection}\n\`\`\`\n\n${base}`;
+      }
+    } catch {
+      // Fall back to base context
+    }
+  }
+
+  return base;
 }
 
 /**

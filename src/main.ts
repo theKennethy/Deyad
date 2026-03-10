@@ -283,7 +283,7 @@ ipcMain.handle('ollama:fim-complete', async (_event, { model, prompt, suffix, st
       model,
       prompt,
       stream: false,
-      options: { temperature: 0.2, num_predict: 128, stop: stop || ['\n\n', '```'] },
+      options: { temperature: 0.15, num_predict: 256, top_p: 0.9, repeat_penalty: 1.1, stop: stop || ['\n\n', '```'] },
     };
     if (suffix) body.suffix = suffix;
     const request = net.request({ method: 'POST', url: `${getOllamaBaseUrl()}/api/generate` });
