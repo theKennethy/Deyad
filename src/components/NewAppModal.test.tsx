@@ -45,6 +45,6 @@ describe('NewAppModal', () => {
     fireEvent.change(screen.getByLabelText('App name'), { target: { value: 'MyApp' } });
     fireEvent.click(screen.getByText('Create App'));
 
-    expect(onCreate).toHaveBeenCalledWith('MyApp', 'plugin-prompt', 'frontend', undefined, 'plugin-prompt');
+    expect(onCreate).toHaveBeenCalledWith('MyApp', 'plugin-prompt', 'frontend', 'plugin-prompt');
   });
 });

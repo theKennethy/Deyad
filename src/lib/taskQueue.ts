@@ -16,7 +16,7 @@ export interface TaskQueueItem {
   appId: string;
   appName: string;
   appType: 'frontend' | 'fullstack';
-  dbProvider?: 'mysql' | 'postgresql';
+  dbProvider?: 'postgresql';
   dbStatus: 'none' | 'running' | 'stopped';
   model: string;
   prompt: string;
@@ -101,7 +101,7 @@ class TaskQueue {
     appId: string;
     appName: string;
     appType: 'frontend' | 'fullstack';
-    dbProvider?: 'mysql' | 'postgresql';
+    dbProvider?: 'postgresql';
     dbStatus: 'none' | 'running' | 'stopped';
     model: string;
     prompt: string;

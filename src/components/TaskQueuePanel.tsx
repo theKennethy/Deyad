@@ -7,7 +7,7 @@ interface Props {
   appId: string;
   appName: string;
   appType: 'frontend' | 'fullstack';
-  dbProvider?: 'mysql' | 'postgresql';
+  dbProvider?: 'postgresql';
   dbStatus: 'none' | 'running' | 'stopped';
   model: string;
   onClose: () => void;

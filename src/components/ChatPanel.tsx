@@ -183,7 +183,7 @@ export default function ChatPanel({
 
   const getSystemPrompt = (): string => {
     if (planningMode && !pendingPlan) return PLANNING_SYSTEM_PROMPT;
-    if (app.appType === 'fullstack') return getFullStackSystemPrompt(app.dbProvider);
+    if (app.appType === 'fullstack') return getFullStackSystemPrompt();
     return FRONTEND_SYSTEM_PROMPT;
   };
 
@@ -263,7 +263,7 @@ export default function ChatPanel({
             .join('\n');
           ollamaMessages.push({
             role: 'system' as const,
-            content: `The database is running (${app.dbProvider ?? 'mysql'}). Current schema:\n${schemaText}\n\nUse this schema when generating backend code, API routes, or Prisma queries.`,
+            content: `The database is running (PostgreSQL). Current schema:\n${schemaText}\n\nUse this schema when generating backend code, API routes, or Prisma queries.`,
           });
         }
       } catch {
@@ -647,7 +647,7 @@ export default function ChatPanel({
                   <span className="stack-badge">Express</span>
                   <span className="stack-badge">Prisma</span>
                   <span className={`stack-badge stack-badge-db`}>
-                    {app.dbProvider === 'postgresql' ? 'PostgreSQL' : 'MySQL'}
+                    PostgreSQL
                   </span>
                 </>
               )}

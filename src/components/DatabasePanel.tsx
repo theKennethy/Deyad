@@ -13,15 +13,7 @@ interface Props {
   dbStatus: 'none' | 'running' | 'stopped';
 }
 
-const DEFAULT_GUI_PORTS: Record<string, number> = {
-  mysql: 8080,
-  postgresql: 5050,
-};
-
-const GUI_LABELS: Record<string, string> = {
-  mysql: 'phpMyAdmin',
-  postgresql: 'pgAdmin',
-};
+const DEFAULT_GUI_PORT = 5050;
 
 export default function DatabasePanel({ app, dbStatus }: Props) {
   const [tables, setTables] = useState<TableInfo[]>([]);
@@ -31,10 +23,8 @@ export default function DatabasePanel({ app, dbStatus }: Props) {
   const [portReady, setPortReady] = useState(false);
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const provider = app.dbProvider ?? 'mysql';
-  const guiPort = app.guiPort ?? DEFAULT_GUI_PORTS[provider];
+  const guiPort = app.guiPort ?? DEFAULT_GUI_PORT;
   const guiUrl = `http://localhost:${guiPort}`;
-  const guiLabel = GUI_LABELS[provider];
 
   // Poll until the GUI port actually accepts connections before rendering the iframe
   useEffect(() => {
@@ -78,7 +68,7 @@ export default function DatabasePanel({ app, dbStatus }: Props) {
             className={`db-toolbar-tab ${view === 'gui' ? 'active' : ''}`}
             onClick={() => setView('gui')}
           >
-            {guiLabel}
+            pgAdmin
           </button>
           <button
             className={`db-toolbar-tab ${view === 'schema' ? 'active' : ''}`}
@@ -98,9 +88,9 @@ export default function DatabasePanel({ app, dbStatus }: Props) {
         <div className="db-gui-wrapper">
           {dbStatus !== 'running' ? (
             <div className="db-gui-placeholder">
-              <div className="db-gui-placeholder-icon">{provider === 'mysql' ? '🐬' : '🐘'}</div>
-              <h3>{guiLabel}</h3>
-              <p>Start the database to access {guiLabel}.</p>
+              <div className="db-gui-placeholder-icon">🐘</div>
+              <h3>pgAdmin</h3>
+              <p>Start the database to access pgAdmin.</p>
               <p className="db-gui-hint">
                 Use the <strong>DB toggle</strong> in the chat panel or run <code>docker compose up -d</code> in the terminal.
               </p>
@@ -108,15 +98,15 @@ export default function DatabasePanel({ app, dbStatus }: Props) {
           ) : !portReady ? (
             <div className="db-gui-placeholder">
               <div className="db-gui-placeholder-icon">⏳</div>
-              <h3>Starting {guiLabel}…</h3>
-              <p>Waiting for {guiLabel} to be ready on port {guiPort}.</p>
+              <h3>Starting pgAdmin…</h3>
+              <p>Waiting for pgAdmin to be ready on port {guiPort}.</p>
             </div>
           ) : (
             <iframe
-              key={`${provider}-${dbStatus}`}
+              key={`pgadmin-${dbStatus}`}
               src={guiUrl}
               className="db-gui-iframe"
-              title={guiLabel}
+              title="pgAdmin"
             />
           )}
         </div>

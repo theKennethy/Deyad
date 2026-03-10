@@ -67,20 +67,8 @@ describe('isFullStackRequest', () => {
 });
 
 describe('getFullStackSystemPrompt', () => {
-  it('returns MySQL prompt by default', () => {
+  it('returns PostgreSQL prompt', () => {
     const prompt = getFullStackSystemPrompt();
-    expect(prompt).toContain('MySQL 8');
-    expect(prompt).toContain('port 3306');
-  });
-
-  it('returns MySQL prompt when mysql is specified', () => {
-    const prompt = getFullStackSystemPrompt('mysql');
-    expect(prompt).toContain('MySQL 8');
-    expect(prompt).toContain('port 3306');
-  });
-
-  it('returns PostgreSQL prompt when postgresql is specified', () => {
-    const prompt = getFullStackSystemPrompt('postgresql');
     expect(prompt).toContain('PostgreSQL 16');
     expect(prompt).toContain('port 5432');
     expect(prompt).not.toContain('MySQL');

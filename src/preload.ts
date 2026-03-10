@@ -18,7 +18,7 @@ export interface ChatMessage {
   content: string;
 }
 
-export type DbProvider = 'mysql' | 'postgresql';
+export type DbProvider = 'postgresql';
 export type AppType = 'frontend' | 'fullstack';
 
 export interface AppProject {

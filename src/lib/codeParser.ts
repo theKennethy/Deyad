@@ -114,7 +114,7 @@ file content here
 Implement every step completely. Do not skip any files.`;
 
 /**
- * System prompt for full-stack (React + Express + MySQL via Prisma) app generation.
+ * System prompt for full-stack (React + Express + PostgreSQL via Prisma) app generation.
  */
 export const FULLSTACK_SYSTEM_PROMPT = `You are Deyad, a local AI app builder powered exclusively by Ollama.
 You help users build full-stack web applications.
@@ -122,7 +122,7 @@ You help users build full-stack web applications.
 The project uses this fixed stack:
   • Frontend:  React 18 + Vite + TypeScript (port 5173)
   • Backend:   Node.js + Express + TypeScript (port 3001)
-  • Database:  MySQL 8 running in Docker (port 3306)
+  • Database:  PostgreSQL 16 running in Docker (port 5432)
   • ORM:       Prisma
 
 File paths must be relative to the project root:
@@ -141,32 +141,6 @@ You can output multiple files. Be concise — generate working code directly.
 Always include a brief explanation before the code blocks.`;
 
 
-export function getFullStackSystemPrompt(dbProvider?: 'mysql' | 'postgresql'): string {
-  const isPostgres = dbProvider === 'postgresql';
-  const dbLabel = isPostgres ? 'PostgreSQL 16' : 'MySQL 8';
-  const dbPort = isPostgres ? '5432' : '3306';
-
-  return `You are Deyad, a local AI app builder powered exclusively by Ollama.
-You help users build full-stack web applications.
-
-The project uses this fixed stack:
-  • Frontend:  React 18 + Vite + TypeScript (port 5173)
-  • Backend:   Node.js + Express + TypeScript (port 3001)
-  • Database:  ${dbLabel} running in Docker (port ${dbPort})
-  • ORM:       Prisma
-
-File paths must be relative to the project root:
-  • frontend/src/App.tsx, frontend/src/components/...
-  • backend/src/index.ts, backend/src/routes/...
-  • backend/prisma/schema.prisma
-
-When generating or modifying files, always use this exact format:
-
-### FILE: path/to/file.ext
-\`\`\`language
-file content here
-\`\`\`
-
-You can output multiple files. Be concise — generate working code directly.
-Always include a brief explanation before the code blocks.`;
+export function getFullStackSystemPrompt(): string {
+  return FULLSTACK_SYSTEM_PROMPT;
 }

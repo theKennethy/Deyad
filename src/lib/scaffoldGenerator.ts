@@ -7,7 +7,7 @@
  * generateFullStackScaffold — a project with:
  *   - React + Vite  (frontend, port 5173)
  *   - Express       (backend API, port 3001)
- *   - MySQL 8 or PostgreSQL 16 (via Docker Compose)
+ *   - PostgreSQL 16 (via Docker Compose)
  *   - Prisma ORM    (schema + client)
  *   - docker-compose.yml
  *   - README with startup instructions
@@ -178,7 +178,7 @@ input:focus { border-color: #6366f1; }
   };
 }
 
-export type DbProvider = 'mysql' | 'postgresql';
+export type DbProvider = 'postgresql';
 
 export interface ScaffoldOptions {
   appName: string;
@@ -187,13 +187,9 @@ export interface ScaffoldOptions {
   dbUser: string;
   /** If omitted a cryptographically random password is generated at scaffold time. */
   dbPassword: string;
-  /** Separately generated root password (optional; random if omitted). */
-  dbRootPassword?: string;
-  /** Database provider. Defaults to 'mysql' for backward compatibility. */
-  dbProvider?: DbProvider;
-  /** Host port for the DB (mapped to container 5432/3306). Auto-assigned if omitted. */
+  /** Host port for the DB (mapped to container 5432). Auto-assigned if omitted. */
   dbPort?: number;
-  /** Host port for the admin GUI (pgAdmin/phpMyAdmin, mapped to container 80). Auto-assigned if omitted. */
+  /** Host port for the admin GUI (pgAdmin, mapped to container 80). Auto-assigned if omitted. */
   guiPort?: number;
 }
 
@@ -215,7 +211,7 @@ export function allocatePorts(appId: string): [number, number] {
 }
 
 /**
- * Sanitises a string so it is safe to use as a MySQL identifier or
+ * Sanitises a string so it is safe to use as a database identifier or
  * Docker Compose container/volume name. Replaces all non-alphanumeric/underscore
  * characters and ensures the result does not start with a digit.
  */
@@ -228,14 +224,10 @@ export function generateFullStackScaffold(opts: ScaffoldOptions): Record<string,
   const dbName = sanitize(opts.dbName || 'deyad_db');
   const dbUser = sanitize(opts.dbUser || 'deyad_user');
   const dbPassword = opts.dbPassword;
-  const dbRootPassword = opts.dbRootPassword ?? opts.dbPassword;
-  const dbProvider: DbProvider = opts.dbProvider ?? 'mysql';
-  const isPostgres = dbProvider === 'postgresql';
-  const hostDbPort = opts.dbPort ?? (isPostgres ? 5433 : 3306);
-  const hostGuiPort = opts.guiPort ?? (isPostgres ? 5050 : 8080);
+  const hostDbPort = opts.dbPort ?? 5433;
+  const hostGuiPort = opts.guiPort ?? 5050;
 
-  const dockerCompose = isPostgres
-    ? `version: '3.9'
+  const dockerCompose = `version: '3.9'
 
 services:
   postgres:
@@ -272,53 +264,12 @@ services:
 
 volumes:
   postgres_data:
-`
-    : `version: '3.9'
-
-services:
-  mysql:
-    image: mysql:8.0
-    container_name: ${sanitize(appName)}_mysql
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: ${dbRootPassword}
-      MYSQL_DATABASE: ${dbName}
-      MYSQL_USER: ${dbUser}
-      MYSQL_PASSWORD: ${dbPassword}
-    ports:
-      - '${hostDbPort}:3306'
-    volumes:
-      - mysql_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_PASSWORD mysqladmin ping -h localhost -u $$MYSQL_USER"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
-  phpmyadmin:
-    image: phpmyadmin:5
-    container_name: ${sanitize(appName)}_phpmyadmin
-    restart: unless-stopped
-    environment:
-      PMA_HOST: mysql
-      PMA_PORT: 3306
-      PMA_USER: ${dbUser}
-      PMA_PASSWORD: ${dbPassword}
-    ports:
-      - '${hostGuiPort}:80'
-    depends_on:
-      mysql:
-        condition: service_healthy
-
-volumes:
-  mysql_data:
 `;
 
   const dbPort = String(hostDbPort);
-  const dbProtocol = isPostgres ? 'postgresql' : 'mysql';
-  const prismaProvider = isPostgres ? 'postgresql' : 'mysql';
-  const dbLabel = isPostgres ? 'PostgreSQL 16' : 'MySQL 8';
+  const dbProtocol = 'postgresql';
+  const prismaProvider = 'postgresql';
+  const dbLabel = 'PostgreSQL 16';
 
   return {
     // ── Docker Compose ──────────────────────────────────────────────────
@@ -737,7 +688,7 @@ ${description}
 
 ## Getting Started
 
-### 1. Start the ${isPostgres ? 'PostgreSQL' : 'MySQL'} database
+### 1. Start the PostgreSQL database
 
 > Requires [Docker](https://www.docker.com/) to be installed.
 
@@ -773,17 +724,11 @@ Frontend runs at **http://localhost:5173**
 
 ### 4. Open the database admin UI
 
-${isPostgres
-  ? `pgAdmin is available at **http://localhost:${hostGuiPort}**
+pgAdmin is available at **http://localhost:${hostGuiPort}**
 
 Login with:
 - **Email:** admin@admin.com
-- **Password:** (your DB password)`
-  : `phpMyAdmin is available at **http://localhost:${hostGuiPort}**
-
-Login with:
-- **Username:** ${dbUser}
-- **Password:** (your DB password)`}
+- **Password:** (your DB password)
 
 ## Database connection
 

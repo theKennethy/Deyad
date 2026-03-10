@@ -23,10 +23,10 @@ export interface AppProject {
   description: string;
   createdAt: string;
   appType: 'frontend' | 'fullstack';
-  dbProvider?: 'mysql' | 'postgresql';
+  dbProvider?: 'postgresql';
   /** Host port for the database (unique per app). */
   dbPort?: number;
-  /** Host port for the admin GUI — pgAdmin or phpMyAdmin (unique per app). */
+  /** Host port for the admin GUI — pgAdmin (unique per app). */
   guiPort?: number;
 }
 
@@ -209,8 +209,8 @@ export default function App() {
   };
 
 
-  const handleCreateApp = async (name: string, description: string, appType: 'frontend' | 'fullstack', dbProvider?: 'mysql' | 'postgresql', templatePrompt?: string) => {
-    const app = await window.deyad.createApp(name, description, appType, dbProvider);
+  const handleCreateApp = async (name: string, description: string, appType: 'frontend' | 'fullstack', templatePrompt?: string) => {
+    const app = await window.deyad.createApp(name, description, appType, 'postgresql');
     setShowNewAppModal(false);
     await loadApps();
 
@@ -224,8 +224,6 @@ export default function App() {
         dbName: name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_db',
         dbUser: name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_user',
         dbPassword: generatePassword(24),
-        dbRootPassword: generatePassword(24),
-        dbProvider: dbProvider ?? 'mysql',
         dbPort: app.dbPort,
         guiPort: app.guiPort,
       });

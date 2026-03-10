@@ -10,12 +10,10 @@ const fullApp = {
   description: '',
   createdAt: new Date().toISOString(),
   appType: 'fullstack' as const,
-  dbProvider: 'mysql' as const,
-  dbPort: 13306,
-  guiPort: 18080,
+  dbProvider: 'postgresql' as const,
+  dbPort: 15432,
+  guiPort: 15050,
 };
-
-const pgApp = { ...fullApp, id: 'pg1', dbProvider: 'postgresql' as const, dbPort: 15432, guiPort: 15050 };
 
 const simpleSchema = {
   tables: [
@@ -42,27 +40,13 @@ describe('DatabasePanel', () => {
     expect(screen.getByText(/only for full-stack apps/i)).toBeTruthy();
   });
 
-  it('shows placeholder when DB stopped (mysql)', () => {
+  it('shows placeholder when DB stopped', () => {
     render(<DatabasePanel app={fullApp} dbStatus="stopped" />);
     expect(screen.getByText(/start the database/i)).toBeTruthy();
   });
 
-  it('shows placeholder when DB stopped (postgresql)', () => {
-    render(<DatabasePanel app={pgApp} dbStatus="stopped" />);
-    expect(screen.getByText(/start the database/i)).toBeTruthy();
-  });
-
-  it('renders iframe when DB is running (mysql)', async () => {
+  it('renders iframe when DB is running', async () => {
     const { container } = render(<DatabasePanel app={fullApp} dbStatus="running" />);
-    await waitFor(() => {
-      const iframe = container.querySelector('iframe');
-      expect(iframe).toBeTruthy();
-      expect(iframe?.src).toContain('18080');
-    });
-  });
-
-  it('renders iframe when DB is running (postgresql)', async () => {
-    const { container } = render(<DatabasePanel app={pgApp} dbStatus="running" />);
     await waitFor(() => {
       const iframe = container.querySelector('iframe');
       expect(iframe).toBeTruthy();
@@ -73,7 +57,7 @@ describe('DatabasePanel', () => {
   it('shows starting placeholder when port not ready', () => {
     (window as any).deyad.portCheck = vi.fn().mockResolvedValue(false);
     render(<DatabasePanel app={fullApp} dbStatus="running" />);
-    expect(screen.getByText(/starting phpmyadmin/i)).toBeTruthy();
+    expect(screen.getByText(/starting pgadmin/i)).toBeTruthy();
   });
 
   it('switches to schema view and shows tables', async () => {

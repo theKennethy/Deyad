@@ -84,7 +84,7 @@ export interface AgentCallbacks {
 export interface AgentOptions {
   appId: string;
   appType: 'frontend' | 'fullstack';
-  dbProvider?: 'mysql' | 'postgresql';
+  dbProvider?: 'postgresql';
   dbStatus: 'none' | 'running' | 'stopped';
   model: string;
   userMessage: string;
@@ -99,9 +99,9 @@ export interface AgentOptions {
   callbacks: AgentCallbacks;
 }
 
-function getAgentSystemPrompt(appType: string, dbProvider?: string): string {
+function getAgentSystemPrompt(appType: string, _dbProvider?: string): string {
   const stackInfo = appType === 'fullstack'
-    ? `This is a full-stack project (React + Vite + TypeScript frontend, Express + Prisma backend, ${dbProvider === 'postgresql' ? 'PostgreSQL' : 'MySQL'} database).`
+    ? 'This is a full-stack project (React + Vite + TypeScript frontend, Express + Prisma backend, PostgreSQL database).'
     : 'This is a frontend project (React + Vite + TypeScript).';
 
   return `You are Deyad Agent, an autonomous AI developer powered by Ollama.

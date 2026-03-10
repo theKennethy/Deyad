@@ -429,7 +429,7 @@ ipcMain.handle('apps:create', async (_event, { name, description, appType, dbPro
     appType: resolvedAppType,
   };
   if (resolvedAppType === 'fullstack') {
-    if (dbProvider) meta.dbProvider = dbProvider;
+    meta.dbProvider = 'postgresql';
     // Allocate unique host ports so multiple apps don't collide
     const [dbPort, guiPort] = allocateAppPorts(id);
     meta.dbPort = dbPort;

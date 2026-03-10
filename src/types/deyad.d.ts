@@ -18,7 +18,7 @@ interface ChatMessage {
   content: string;
 }
 
-type DbProvider = 'mysql' | 'postgresql';
+type DbProvider = 'postgresql';
 
 type AppType = 'frontend' | 'fullstack';
 
