@@ -194,9 +194,15 @@ const createWindow = () => {
 
     // Strip X-Frame-Options & CSP frame-ancestors from local DB admin tools
     // (phpMyAdmin :8080, pgAdmin :5050) so they can be embedded in iframes.
+    // We use a broad filter and check URLs in the callback to avoid Electron
+    // probing the registered URL patterns and logging ERR_CONNECTION_REFUSED.
     mainWindow.webContents.session.webRequest.onHeadersReceived(
-      { urls: ['http://localhost:8080/*', 'http://localhost:5050/*'] },
       (details, callback) => {
+        const url = details.url;
+        if (!url.startsWith('http://localhost:8080/') && !url.startsWith('http://localhost:5050/')) {
+          callback({ cancel: false });
+          return;
+        }
         const headers = { ...details.responseHeaders };
         for (const key of Object.keys(headers)) {
           const lk = key.toLowerCase();
