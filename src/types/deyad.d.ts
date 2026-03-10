@@ -39,15 +39,9 @@ interface UiMessage {
   model?: string;
 }
 
-type AiProvider = 'ollama' | 'openai' | 'anthropic' | 'groq';
-
 interface DeyadSettings {
   ollamaHost: string;
   defaultModel: string;
-  aiProvider: AiProvider;
-  openaiKey: string;
-  anthropicKey: string;
-  groqKey: string;
 }
 
 interface GitLogEntry {

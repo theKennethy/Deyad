@@ -142,27 +142,15 @@ contextBridge.exposeInMainWorld('deyad', {
   getSettings: (): Promise<{
     ollamaHost: string;
     defaultModel: string;
-    aiProvider: string;
-    openaiKey: string;
-    anthropicKey: string;
-    groqKey: string;
   }> =>
     ipcRenderer.invoke('settings:get'),
 
   setSettings: (settings: {
     ollamaHost?: string;
     defaultModel?: string;
-    aiProvider?: string;
-    openaiKey?: string;
-    anthropicKey?: string;
-    groqKey?: string;
   }): Promise<{
     ollamaHost: string;
     defaultModel: string;
-    aiProvider: string;
-    openaiKey: string;
-    anthropicKey: string;
-    groqKey: string;
   }> =>
     ipcRenderer.invoke('settings:set', settings),
 

@@ -2104,37 +2104,6 @@ body {
   padding: 30px 20px;
 }
 
-/* ─── Provider Cards (Settings Modal) ────────────────────────────────── */
-.provider-cards {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-}
-.provider-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 12px 8px;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-  color: var(--text-secondary);
-}
-.provider-card:hover { border-color: var(--accent-light); }
-.provider-card.selected {
-  border-color: var(--accent);
-  background: rgba(99,102,241,0.1);
-  color: var(--text-primary);
-}
-.provider-name { font-size: 13px; font-weight: 600; }
-.provider-desc { font-size: 11px; color: var(--text-muted); }
-@media (max-width: 768px) {
-  .provider-cards { grid-template-columns: repeat(2, 1fr); }
-}
-
 /* ─── Diff Modal ─────────────────────────────────────────────────────── */
 .diff-modal { max-width: 780px; width: 95vw; }
 .diff-modal .modal-header {

@@ -21,24 +21,14 @@ export function appDir(appsDir: string, appId: string): string {
 
 // ── Settings utility ──────────────────────────────────────────────────────────
 
-export type AiProvider = 'ollama' | 'openai' | 'anthropic' | 'groq';
-
 export interface DeyadSettings {
   ollamaHost: string;
   defaultModel: string;
-  aiProvider: AiProvider;
-  openaiKey: string;
-  anthropicKey: string;
-  groqKey: string;
 }
 
 export const DEFAULT_SETTINGS: DeyadSettings = {
   ollamaHost: 'http://localhost:11434',
   defaultModel: '',
-  aiProvider: 'ollama',
-  openaiKey: '',
-  anthropicKey: '',
-  groqKey: '',
 };
 
 export function loadSettings(settingsPath: string): DeyadSettings {
