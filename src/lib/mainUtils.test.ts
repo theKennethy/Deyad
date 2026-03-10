@@ -75,7 +75,7 @@ describe('loadSettings / saveSettings', () => {
 
   it('round-trips settings', () => {
     const p = path.join(tmpDir, 'settings.json');
-    const custom = { ollamaHost: 'http://myhost:1234', defaultModel: 'llama3' };
+    const custom = { ollamaHost: 'http://myhost:1234', defaultModel: 'llama3', aiProvider: 'ollama' as const, openaiKey: '', anthropicKey: '', groqKey: '' };
     saveSettings(p, custom);
     const loaded = loadSettings(p);
     expect(loaded).toEqual(custom);

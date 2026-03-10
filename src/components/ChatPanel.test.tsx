@@ -13,6 +13,7 @@ beforeEach(()=>{
     onStreamToken: vi.fn().mockReturnValue(()=>{}),
     onStreamDone: vi.fn().mockReturnValue(()=>{}),
     onStreamError: vi.fn().mockReturnValue(()=>{}),
+    onAppDevLog: vi.fn().mockReturnValue(()=>{}),
     loadMessages: vi.fn().mockResolvedValue([]),
     saveMessages: vi.fn().mockResolvedValue(true),
   };

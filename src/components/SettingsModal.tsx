@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 
+type AiProvider = 'ollama' | 'openai' | 'anthropic' | 'groq';
+
 interface Props {
   onClose: () => void;
 }
@@ -7,6 +9,10 @@ interface Props {
 export default function SettingsModal({ onClose }: Props) {
   const [ollamaHost, setOllamaHost] = useState('http://localhost:11434');
   const [defaultModel, setDefaultModel] = useState('');
+  const [aiProvider, setAiProvider] = useState<AiProvider>('ollama');
+  const [openaiKey, setOpenaiKey] = useState('');
+  const [anthropicKey, setAnthropicKey] = useState('');
+  const [groqKey, setGroqKey] = useState('');
   const [models, setModels] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -20,6 +26,10 @@ export default function SettingsModal({ onClose }: Props) {
     const settings = await window.deyad.getSettings();
     setOllamaHost(settings.ollamaHost);
     setDefaultModel(settings.defaultModel);
+    setAiProvider((settings.aiProvider as AiProvider) || 'ollama');
+    setOpenaiKey(settings.openaiKey || '');
+    setAnthropicKey(settings.anthropicKey || '');
+    setGroqKey(settings.groqKey || '');
     loadModels();
   };
 
@@ -27,7 +37,7 @@ export default function SettingsModal({ onClose }: Props) {
     try {
       const { models: list } = await window.deyad.listModels();
       setModels(list.map((m) => m.name));
-    } catch { /* Ollama not available */ }
+    } catch { /* not available */ }
   };
 
   const handleSave = async () => {
@@ -36,18 +46,27 @@ export default function SettingsModal({ onClose }: Props) {
     await window.deyad.setSettings({
       ollamaHost: ollamaHost.trim(),
       defaultModel,
+      aiProvider,
+      openaiKey: openaiKey.trim(),
+      anthropicKey: anthropicKey.trim(),
+      groqKey: groqKey.trim(),
     });
     setSaving(false);
     setSaved(true);
+    // Reload models for the new provider
+    loadModels();
     setTimeout(() => setSaved(false), 2000);
   };
 
   const handleTest = async () => {
     setTestResult('testing');
     try {
-      // Save current settings first so the backend uses them
       await window.deyad.setSettings({
         ollamaHost: ollamaHost.trim(),
+        aiProvider,
+        openaiKey: openaiKey.trim(),
+        anthropicKey: anthropicKey.trim(),
+        groqKey: groqKey.trim(),
       });
       const { models: list } = await window.deyad.listModels();
       setModels(list.map((m) => m.name));
@@ -56,6 +75,18 @@ export default function SettingsModal({ onClose }: Props) {
       setTestResult('error');
     }
     setTimeout(() => setTestResult('idle'), 3000);
+  };
+
+  const handleProviderChange = async (p: AiProvider) => {
+    setAiProvider(p);
+    setDefaultModel('');
+    // Save provider immediately so list-models uses the right one
+    await window.deyad.setSettings({ aiProvider: p, openaiKey: openaiKey.trim(), anthropicKey: anthropicKey.trim(), groqKey: groqKey.trim() });
+    try {
+      const { models: list } = await window.deyad.listModels();
+      setModels(list.map((m) => m.name));
+      if (list.length > 0) setDefaultModel(list[0].name);
+    } catch { setModels([]); }
   };
 
   return (
@@ -67,24 +98,83 @@ export default function SettingsModal({ onClose }: Props) {
         </div>
 
         <div className="modal-body">
-          {/* Ollama host */}
+          {/* AI Provider selector */}
           <div className="form-field">
-            <label htmlFor="ollama-host">Ollama Host URL</label>
-            <div className="settings-host-row">
-              <input
-                id="ollama-host"
-                value={ollamaHost}
-                onChange={(e) => setOllamaHost(e.target.value)}
-                placeholder="http://localhost:11434"
-              />
-              <button className="btn-secondary btn-test" onClick={handleTest} disabled={testResult === 'testing'}>
-                {testResult === 'testing' ? 'Testing…' : testResult === 'success' ? 'Success' : testResult === 'error' ? 'Error' : 'Test'}
-              </button>
+            <label>AI Provider</label>
+            <div className="provider-cards">
+              {(['ollama', 'openai', 'anthropic', 'groq'] as AiProvider[]).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  className={`provider-card ${aiProvider === p ? 'selected' : ''}`}
+                  onClick={() => handleProviderChange(p)}
+                >
+                  <span className="provider-name">
+                    {p === 'ollama' ? '🦙 Ollama' : p === 'openai' ? '🤖 OpenAI' : p === 'anthropic' ? '🧠 Anthropic' : '⚡ Groq'}
+                  </span>
+                  <span className="provider-desc">
+                    {p === 'ollama' ? 'Local (free)' : p === 'openai' ? 'GPT-4o' : p === 'anthropic' ? 'Claude' : 'Fast inference'}
+                  </span>
+                </button>
+              ))}
             </div>
-            <span className="form-hint">
-              The URL where Ollama is running. Override with OLLAMA_HOST env var.
-            </span>
           </div>
+
+          {/* Ollama host (only for ollama) */}
+          {aiProvider === 'ollama' && (
+            <div className="form-field">
+              <label htmlFor="ollama-host">Ollama Host URL</label>
+              <div className="settings-host-row">
+                <input
+                  id="ollama-host"
+                  value={ollamaHost}
+                  onChange={(e) => setOllamaHost(e.target.value)}
+                  placeholder="http://localhost:11434"
+                />
+                <button className="btn-secondary btn-test" onClick={handleTest} disabled={testResult === 'testing'}>
+                  {testResult === 'testing' ? 'Testing…' : testResult === 'success' ? 'Success' : testResult === 'error' ? 'Error' : 'Test'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* API keys for cloud providers */}
+          {aiProvider === 'openai' && (
+            <div className="form-field">
+              <label htmlFor="openai-key">OpenAI API Key</label>
+              <input
+                id="openai-key"
+                type="password"
+                value={openaiKey}
+                onChange={(e) => setOpenaiKey(e.target.value)}
+                placeholder="sk-..."
+              />
+            </div>
+          )}
+          {aiProvider === 'anthropic' && (
+            <div className="form-field">
+              <label htmlFor="anthropic-key">Anthropic API Key</label>
+              <input
+                id="anthropic-key"
+                type="password"
+                value={anthropicKey}
+                onChange={(e) => setAnthropicKey(e.target.value)}
+                placeholder="sk-ant-..."
+              />
+            </div>
+          )}
+          {aiProvider === 'groq' && (
+            <div className="form-field">
+              <label htmlFor="groq-key">Groq API Key</label>
+              <input
+                id="groq-key"
+                type="password"
+                value={groqKey}
+                onChange={(e) => setGroqKey(e.target.value)}
+                placeholder="gsk_..."
+              />
+            </div>
+          )}
 
           {/* Default model */}
           <div className="form-field">
@@ -100,9 +190,6 @@ export default function SettingsModal({ onClose }: Props) {
                 <option key={m} value={m}>{m}</option>
               ))}
             </select>
-            <span className="form-hint">
-              The model to select by default when opening a new chat.
-            </span>
           </div>
 
           <div className="modal-actions">

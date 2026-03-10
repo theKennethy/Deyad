@@ -7,6 +7,8 @@ import { extractFilesFromResponse, FRONTEND_SYSTEM_PROMPT, getFullStackSystemPro
 import { runAgentLoop } from '../lib/agentLoop';
 import { stripToolMarkup } from '../lib/agentTools';
 import type { ToolResult } from '../lib/agentTools';
+import { detectErrors, buildErrorFixPrompt } from '../lib/errorDetector';
+import type { DetectedError } from '../lib/errorDetector';
 
 interface UiMessage {
   id: string;
@@ -51,12 +53,16 @@ export default function ChatPanel({
   const [agentMode, setAgentMode] = useState(false);
   const [agentSteps, setAgentSteps] = useState<Array<{ type: 'tool' | 'result'; text: string }>>([]);
   const [pendingPlan, setPendingPlan] = useState<string | null>(null);
+  const [imageAttachment, setImageAttachment] = useState<string | null>(null); // base64 data URI
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const streamBuf = useRef('');
   const assistantIdRef = useRef('');
   const streamCleanupRef = useRef<(() => void) | null>(null);
   const agentAbortRef = useRef<(() => void) | null>(null);
+  const [detectedErrors, setDetectedErrors] = useState<DetectedError[]>([]);
+  const [tokenCount, setTokenCount] = useState(0);
 
   // Clean up stream listeners on unmount
   useEffect(() => {
@@ -65,6 +71,31 @@ export default function ChatPanel({
       agentAbortRef.current?.();
     };
   }, []);
+
+  // Listen to dev server logs for error auto-detection
+  useEffect(() => {
+    const unsub = window.deyad.onAppDevLog(({ appId, data }) => {
+      if (appId !== app.id) return;
+      const errors = detectErrors(data);
+      if (errors.length > 0) {
+        setDetectedErrors((prev) => {
+          // Dedup by message
+          const existing = new Set(prev.map((e) => e.message));
+          const fresh = errors.filter((e) => !existing.has(e.message));
+          return fresh.length > 0 ? [...prev, ...fresh].slice(-10) : prev;
+        });
+      }
+    });
+    return unsub;
+  }, [app.id]);
+
+  // Estimate token count from conversation
+  useEffect(() => {
+    let chars = 0;
+    for (const m of messages) chars += m.content.length;
+    // Rough estimate: ~3.5 chars per token
+    setTokenCount(Math.round(chars / 3.5));
+  }, [messages]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -130,6 +161,31 @@ export default function ChatPanel({
     return FRONTEND_SYSTEM_PROMPT;
   };
 
+  const handleImagePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = () => setImageAttachment(reader.result as string);
+          reader.readAsDataURL(file);
+          e.preventDefault();
+        }
+        break;
+      }
+    }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setImageAttachment(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
   const sendMessage = async (overrideText?: string) => {
     const text = (overrideText ?? input).trim();
     if (!text || streaming) return;
@@ -144,6 +200,9 @@ export default function ChatPanel({
 
     // Add user message
     const userMsg: UiMessage = { id: Date.now().toString(), role: 'user', content: text };
+    if (imageAttachment) {
+      userMsg.content = `[Image attached]\n\n${text}`;
+    }
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
 
@@ -156,7 +215,7 @@ export default function ChatPanel({
 
     // Build Ollama message history
     const systemPrompt = getSystemPrompt();
-    const ollamaMessages: { role: 'user' | 'assistant' | 'system'; content: string }[] = [
+    const ollamaMessages: { role: 'user' | 'assistant' | 'system'; content: string; images?: string[] }[] = [
       { role: 'system', content: systemPrompt },
     ];
 
@@ -190,6 +249,18 @@ export default function ChatPanel({
     const recentMessages = newMessages.slice(-10);
     for (const msg of recentMessages) {
       ollamaMessages.push({ role: msg.role, content: msg.content });
+    }
+
+    // If image attached, add to the last user message for vision models
+    if (imageAttachment) {
+      const lastIdx = ollamaMessages.length - 1;
+      if (ollamaMessages[lastIdx]?.role === 'user') {
+        // For Ollama vision models: strip data URI prefix, pass raw base64
+        const base64 = imageAttachment.replace(/^data:image\/[^;]+;base64,/, '');
+        ollamaMessages[lastIdx].images = [base64];
+        ollamaMessages[lastIdx].content = `The user has attached a screenshot/image. Analyze it and generate code that recreates or improves the UI shown. ${text}`;
+      }
+      setImageAttachment(null);
     }
 
     // If executing an approved plan, append the execution instruction
@@ -413,6 +484,15 @@ export default function ChatPanel({
     loadModels();
   };
 
+  const handleAutoFix = () => {
+    const prompt = buildErrorFixPrompt(detectedErrors, appFiles);
+    setDetectedErrors([]);
+    if (agentMode) sendAgentMessage(prompt);
+    else sendMessage(prompt);
+  };
+
+  const handleDismissErrors = () => setDetectedErrors([]);
+
   return (
     <div className="chat-panel" tabIndex={0}>
       {/* Header */}
@@ -422,6 +502,11 @@ export default function ChatPanel({
           <span className="chat-app-desc">{app.description}</span>
         </div>
         <div className="chat-header-right">
+          {tokenCount > 0 && (
+            <span className="token-counter" title="Estimated tokens in conversation">
+              ~{tokenCount > 1000 ? `${(tokenCount / 1000).toFixed(1)}k` : tokenCount} tokens
+            </span>
+          )}
           {app.appType === 'fullstack' && (
             <div className="db-status">
               <span className={`db-indicator ${dbStatus}`}>
@@ -479,6 +564,34 @@ export default function ChatPanel({
           <button className="btn-retry" onClick={handleRetry}>
             Retry
           </button>
+        </div>
+      )}
+
+      {/* Detected errors from dev server */}
+      {detectedErrors.length > 0 && !streaming && (
+        <div className="error-detection-banner">
+          <div className="error-detection-header">
+            <span>⚠️ {detectedErrors.length} error{detectedErrors.length > 1 ? 's' : ''} detected</span>
+            <div className="error-detection-actions">
+              <button className="btn-auto-fix" onClick={handleAutoFix}>
+                🔧 Auto-fix
+              </button>
+              <button className="btn-dismiss-errors" onClick={handleDismissErrors}>
+                ✕
+              </button>
+            </div>
+          </div>
+          <div className="error-detection-list">
+            {detectedErrors.slice(0, 3).map((e, i) => (
+              <div key={i} className="error-detection-item">
+                <span className="error-type-badge">{e.type}</span>
+                <span className="error-msg">{e.message.slice(0, 120)}</span>
+              </div>
+            ))}
+            {detectedErrors.length > 3 && (
+              <div className="error-detection-more">+{detectedErrors.length - 3} more</div>
+            )}
+          </div>
         </div>
       )}
 
@@ -578,18 +691,41 @@ export default function ChatPanel({
 
       {/* Input area */}
       <div className="chat-input-area">
-        <textarea
-          className="chat-input"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          rows={2}
-          placeholder={streaming ? 'AI is responding…' : 'Describe what you want to build…'}
-          disabled={streaming}
-        />
-        <button className="btn-send" onClick={() => agentMode ? sendAgentMessage() : sendMessage()} disabled={streaming || !input.trim()}>
-          {agentMode ? '⚡' : '↑'}
-        </button>
+        {imageAttachment && (
+          <div className="image-preview">
+            <img src={imageAttachment} alt="Attached" />
+            <button className="btn-remove-image" onClick={() => setImageAttachment(null)}>✕</button>
+          </div>
+        )}
+        <div className="chat-input-row">
+          <button
+            className="btn-attach-image"
+            onClick={() => imageInputRef.current?.click()}
+            title="Attach image (or paste screenshot)"
+          >
+            📎
+          </button>
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={handleImageUpload}
+          />
+          <textarea
+            className="chat-input"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onPaste={handleImagePaste}
+            rows={2}
+            placeholder={streaming ? 'AI is responding…' : imageAttachment ? 'Describe what to build from this image…' : 'Describe what you want to build…'}
+            disabled={streaming}
+          />
+          <button className="btn-send" onClick={() => agentMode ? sendAgentMessage() : sendMessage()} disabled={streaming || !input.trim()}>
+            {agentMode ? '⚡' : '↑'}
+          </button>
+        </div>
       </div>
     </div>
   );

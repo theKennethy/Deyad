@@ -39,9 +39,15 @@ interface UiMessage {
   model?: string;
 }
 
+type AiProvider = 'ollama' | 'openai' | 'anthropic' | 'groq';
+
 interface DeyadSettings {
   ollamaHost: string;
   defaultModel: string;
+  aiProvider: AiProvider;
+  openaiKey: string;
+  anthropicKey: string;
+  groqKey: string;
 }
 
 interface GitLogEntry {
@@ -114,6 +120,18 @@ interface DeyadAPI {
 
   // Git
   gitLog(appId: string): Promise<GitLogEntry[]>;
+  gitShow(appId: string, hash: string, filePath: string): Promise<string | null>;
+  gitDiffStat(appId: string, hash: string): Promise<{ status: string; path: string }[]>;
+  gitCheckout(appId: string, hash: string): Promise<{ success: boolean; error?: string }>;
+
+  // Package Manager
+  npmList(appId: string): Promise<{ dependencies: Record<string, string>; devDependencies: Record<string, string> }>;
+  npmInstall(appId: string, packageName: string, isDev: boolean): Promise<{ success: boolean; error?: string }>;
+  npmUninstall(appId: string, packageName: string): Promise<{ success: boolean; error?: string }>;
+
+  // Environment Variables
+  envRead(appId: string): Promise<Record<string, Record<string, string>>>;
+  envWrite(appId: string, envFile: string, vars: Record<string, string>): Promise<{ success: boolean; error?: string }>;
 
   // Terminal support
   createTerminal(appId?: string): Promise<string>;

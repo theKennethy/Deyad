@@ -206,7 +206,7 @@ const createWindow = () => {
   });
 };
 
-// ── AI (Ollama) ───────────────────────────────────────────────────────────────
+// ── AI (Ollama + Cloud Providers) ─────────────────────────────────────────────
 
 async function listOllamaModels(): Promise<{ models: { name: string; modified_at: string; size: number; details?: Record<string, string> }[] }> {
   return new Promise((resolve, reject) => {
@@ -224,8 +224,24 @@ async function listOllamaModels(): Promise<{ models: { name: string; modified_at
   });
 }
 
+/** List models from cloud providers (OpenAI/Anthropic/Groq). */
+function listCloudModels(provider: string): { models: { name: string; modified_at: string; size: number; details?: Record<string, string> }[] } {
+  const now = new Date().toISOString();
+  const modelLists: Record<string, string[]> = {
+    openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo', 'o3-mini'],
+    anthropic: ['claude-sonnet-4-20250514', 'claude-3-5-haiku-20241022', 'claude-3-haiku-20240307'],
+    groq: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768', 'gemma2-9b-it'],
+  };
+  const names = modelLists[provider] || [];
+  return {
+    models: names.map((name) => ({ name, modified_at: now, size: 0 })),
+  };
+}
+
 ipcMain.handle('ollama:list-models', async () => {
-  return listOllamaModels();
+  const provider = currentSettings.aiProvider || 'ollama';
+  if (provider === 'ollama') return listOllamaModels();
+  return listCloudModels(provider);
 });
 
 /** Stream from Ollama (NDJSON format). */
@@ -272,8 +288,202 @@ function streamOllama(event: Electron.IpcMainInvokeEvent, model: string, message
   });
 }
 
+/** Stream from OpenAI-compatible API (SSE format). */
+function streamOpenAI(
+  event: Electron.IpcMainInvokeEvent,
+  model: string,
+  messages: { role: string; content: string }[],
+  apiKey: string,
+  baseUrl: string,
+): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const body = JSON.stringify({ model, messages, stream: true });
+    const request = net.request({ method: 'POST', url: `${baseUrl}/chat/completions` });
+    let buffer = '';
+    let resolved = false;
+    const finish = () => {
+      if (resolved) return;
+      resolved = true;
+      if (!event.sender.isDestroyed()) event.sender.send('ollama:stream-done');
+      resolve();
+    };
+    request.on('response', (response) => {
+      if (response.statusCode !== 200) {
+        let errBody = '';
+        response.on('data', (chunk) => { errBody += chunk; });
+        response.on('end', () => {
+          if (!resolved) {
+            resolved = true;
+            const msg = `API error ${response.statusCode}: ${errBody.slice(0, 200)}`;
+            if (!event.sender.isDestroyed()) event.sender.send('ollama:stream-error', msg);
+            reject(new Error(msg));
+          }
+        });
+        return;
+      }
+      response.on('data', (chunk: Buffer) => {
+        buffer += chunk.toString();
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith('data: ')) continue;
+          const payload = trimmed.slice(6);
+          if (payload === '[DONE]') { finish(); return; }
+          try {
+            const parsed = JSON.parse(payload);
+            const delta = parsed.choices?.[0]?.delta?.content;
+            if (delta && !event.sender.isDestroyed()) {
+              event.sender.send('ollama:stream-token', delta);
+            }
+          } catch { /* skip */ }
+        }
+      });
+      response.on('end', () => finish());
+    });
+    request.on('error', (err: Error) => {
+      if (!resolved) {
+        resolved = true;
+        if (!event.sender.isDestroyed()) event.sender.send('ollama:stream-error', err.message);
+        reject(err);
+      }
+    });
+    request.setHeader('Content-Type', 'application/json');
+    request.setHeader('Authorization', `Bearer ${apiKey}`);
+    request.write(body);
+    request.end();
+  });
+}
+
+/** Stream from Anthropic Messages API (SSE format). */
+function streamAnthropic(
+  event: Electron.IpcMainInvokeEvent,
+  model: string,
+  messages: { role: string; content: string }[],
+  apiKey: string,
+): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    // Anthropic requires system prompt separated; extract it
+    const systemParts = messages.filter((m) => m.role === 'system').map((m) => m.content);
+    const nonSystem = messages.filter((m) => m.role !== 'system');
+    const body = JSON.stringify({
+      model,
+      max_tokens: 8192,
+      stream: true,
+      system: systemParts.join('\n\n'),
+      messages: nonSystem,
+    });
+    const request = net.request({ method: 'POST', url: 'https://api.anthropic.com/v1/messages' });
+    let buffer = '';
+    let resolved = false;
+    const finish = () => {
+      if (resolved) return;
+      resolved = true;
+      if (!event.sender.isDestroyed()) event.sender.send('ollama:stream-done');
+      resolve();
+    };
+    request.on('response', (response) => {
+      if (response.statusCode !== 200) {
+        let errBody = '';
+        response.on('data', (chunk) => { errBody += chunk; });
+        response.on('end', () => {
+          if (!resolved) {
+            resolved = true;
+            const msg = `Anthropic error ${response.statusCode}: ${errBody.slice(0, 200)}`;
+            if (!event.sender.isDestroyed()) event.sender.send('ollama:stream-error', msg);
+            reject(new Error(msg));
+          }
+        });
+        return;
+      }
+      response.on('data', (chunk: Buffer) => {
+        buffer += chunk.toString();
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith('data: ')) continue;
+          const payload = trimmed.slice(6);
+          try {
+            const parsed = JSON.parse(payload);
+            if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
+              if (!event.sender.isDestroyed()) event.sender.send('ollama:stream-token', parsed.delta.text);
+            }
+            if (parsed.type === 'message_stop') finish();
+          } catch { /* skip */ }
+        }
+      });
+      response.on('end', () => finish());
+    });
+    request.on('error', (err: Error) => {
+      if (!resolved) {
+        resolved = true;
+        if (!event.sender.isDestroyed()) event.sender.send('ollama:stream-error', err.message);
+        reject(err);
+      }
+    });
+    request.setHeader('Content-Type', 'application/json');
+    request.setHeader('x-api-key', apiKey);
+    request.setHeader('anthropic-version', '2023-06-01');
+    request.write(body);
+    request.end();
+  });
+}
+
 ipcMain.handle('ollama:chat-stream', async (event, { model, messages }: { model: string; messages: { role: string; content: string }[] }) => {
-  return streamOllama(event, model, messages);
+  const provider = currentSettings.aiProvider || 'ollama';
+
+  switch (provider) {
+    case 'openai':
+      return streamOpenAI(event, model, messages, currentSettings.openaiKey, 'https://api.openai.com/v1');
+    case 'anthropic':
+      return streamAnthropic(event, model, messages, currentSettings.anthropicKey);
+    case 'groq':
+      return streamOpenAI(event, model, messages, currentSettings.groqKey, 'https://api.groq.com/openai/v1');
+    default:
+      return streamOllama(event, model, messages);
+  }
+});
+
+// ── Git Helpers ───────────────────────────────────────────────────────────────
+
+ipcMain.handle('git:show', async (_event, appId: string, hash: string, filePath: string) => {
+  const dir = appDir(appId);
+  if (!fs.existsSync(path.join(dir, '.git'))) return null;
+  // Validate hash is hex-only to prevent injection
+  if (!/^[0-9a-f]+$/i.test(hash)) return null;
+  try {
+    const { stdout } = await execFileAsync('git', ['show', `${hash}:${filePath}`], { cwd: dir, timeout: 10000 });
+    return stdout;
+  } catch { return null; }
+});
+
+ipcMain.handle('git:diff-stat', async (_event, appId: string, hash: string) => {
+  const dir = appDir(appId);
+  if (!fs.existsSync(path.join(dir, '.git'))) return [];
+  if (!/^[0-9a-f]+$/i.test(hash)) return [];
+  try {
+    const { stdout } = await execFileAsync(
+      'git', ['diff-tree', '--no-commit-id', '-r', '--name-status', hash],
+      { cwd: dir, timeout: 10000 },
+    );
+    return stdout.trim().split('\n').filter(Boolean).map((line) => {
+      const [status, ...parts] = line.split('\t');
+      return { status, path: parts.join('\t') };
+    });
+  } catch { return []; }
+});
+
+ipcMain.handle('git:checkout', async (_event, appId: string, hash: string) => {
+  const dir = appDir(appId);
+  if (!fs.existsSync(path.join(dir, '.git'))) return { success: false, error: 'No git repo' };
+  if (!/^[0-9a-f]+$/i.test(hash)) return { success: false, error: 'Invalid hash' };
+  try {
+    await execFileAsync('git', ['checkout', hash, '--', '.'], { cwd: dir, timeout: 10000 });
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : String(err) };
+  }
 });
 
 // ── App Projects ────────────────────────────────────────────────────────────
@@ -632,6 +842,102 @@ function copyRecursiveSync(src: string, dest: string) {
     fs.copyFileSync(src, dest);
   }
 }
+
+// ── Package Manager ────────────────────────────────────────────────────────
+
+ipcMain.handle('npm:list', async (_event, appId: string) => {
+  const dir = appDir(appId);
+  const pkgPath = path.join(dir, 'package.json');
+  // Also check frontend/ for fullstack apps
+  const frontendPkg = path.join(dir, 'frontend', 'package.json');
+  const targetPkg = fs.existsSync(pkgPath) ? pkgPath : fs.existsSync(frontendPkg) ? frontendPkg : null;
+  if (!targetPkg) return { dependencies: {}, devDependencies: {} };
+  try {
+    const pkg = JSON.parse(fs.readFileSync(targetPkg, 'utf-8'));
+    return {
+      dependencies: pkg.dependencies || {},
+      devDependencies: pkg.devDependencies || {},
+    };
+  } catch { return { dependencies: {}, devDependencies: {} }; }
+});
+
+ipcMain.handle('npm:install', async (event, appId: string, packageName: string, isDev: boolean) => {
+  const dir = appDir(appId);
+  // Validate package name (alphanumeric, hyphens, slashes, @scopes)
+  if (!/^(@[\w-]+\/)?[\w][\w.\-]*$/.test(packageName)) {
+    return { success: false, error: 'Invalid package name' };
+  }
+  const viteRoot = getViteRoot(appId) || dir;
+  const args = ['install', packageName];
+  if (isDev) args.push('--save-dev');
+  try {
+    const { stdout, stderr } = await execFileAsync('npm', args, { cwd: viteRoot, timeout: 120000 });
+    if (!event.sender.isDestroyed()) event.sender.send('npm:install-log', { appId, data: stdout + stderr });
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : String(err) };
+  }
+});
+
+ipcMain.handle('npm:uninstall', async (_event, appId: string, packageName: string) => {
+  const dir = appDir(appId);
+  if (!/^(@[\w-]+\/)?[\w][\w.\-]*$/.test(packageName)) {
+    return { success: false, error: 'Invalid package name' };
+  }
+  const viteRoot = getViteRoot(appId) || dir;
+  try {
+    await execFileAsync('npm', ['uninstall', packageName], { cwd: viteRoot, timeout: 60000 });
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : String(err) };
+  }
+});
+
+// ── Environment Variables ────────────────────────────────────────────────────
+
+ipcMain.handle('env:read', (_event, appId: string) => {
+  const dir = appDir(appId);
+  // Check multiple locations
+  const envPaths = [
+    path.join(dir, '.env'),
+    path.join(dir, 'frontend', '.env'),
+    path.join(dir, 'backend', '.env'),
+  ];
+  const result: Record<string, Record<string, string>> = {};
+  for (const envPath of envPaths) {
+    if (fs.existsSync(envPath)) {
+      const relName = path.relative(dir, envPath);
+      const vars: Record<string, string> = {};
+      const lines = fs.readFileSync(envPath, 'utf-8').split('\n');
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const eqIdx = trimmed.indexOf('=');
+        if (eqIdx > 0) {
+          const key = trimmed.slice(0, eqIdx).trim();
+          const value = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, '');
+          vars[key] = value;
+        }
+      }
+      result[relName] = vars;
+    }
+  }
+  return result;
+});
+
+ipcMain.handle('env:write', (_event, appId: string, envFile: string, vars: Record<string, string>) => {
+  const dir = appDir(appId);
+  const envPath = path.join(dir, envFile);
+  // Verify the env path is within the app directory
+  const resolved = path.resolve(envPath);
+  if (!resolved.startsWith(path.resolve(dir))) return { success: false, error: 'Path traversal detected' };
+  const content = Object.entries(vars)
+    .map(([k, v]) => `${k}=${v}`)
+    .join('\n') + '\n';
+  fs.mkdirSync(path.dirname(envPath), { recursive: true });
+  fs.writeFileSync(envPath, content, 'utf-8');
+  return { success: true };
+});
 
 // ── Terminal support ───────────────────────────────────────────────────────
 // spawn a pseudo terminal and forward data events to renderer

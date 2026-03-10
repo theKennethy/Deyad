@@ -16,10 +16,11 @@ interface Props {
   onImportApp: () => void;
   onOpenSettings: () => void;
   onOpenTaskQueue: () => void;
+  onOpenVersionHistory: () => void;
   activeTasks: number;
 }
 
-export default function Sidebar({ apps, selectedApp, onSelectApp, onNewApp, onDeleteApp, onRenameApp, onExportApp, onDeployApp, onImportApp, onOpenSettings, onOpenTaskQueue, activeTasks }: Props) {
+export default function Sidebar({ apps, selectedApp, onSelectApp, onNewApp, onDeleteApp, onRenameApp, onExportApp, onDeployApp, onImportApp, onOpenSettings, onOpenTaskQueue, onOpenVersionHistory, activeTasks }: Props) {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
@@ -132,6 +133,9 @@ export default function Sidebar({ apps, selectedApp, onSelectApp, onNewApp, onDe
       <div className="sidebar-footer">
         <button className="sidebar-tasks-btn" onClick={onOpenTaskQueue} title="Background task queue">
           Tasks{activeTasks > 0 && <span className="task-badge">{activeTasks}</span>}
+        </button>
+        <button className="sidebar-history-btn" onClick={onOpenVersionHistory} title="Version history">
+          History
         </button>
         <button className="sidebar-settings-btn" onClick={onOpenSettings} title="Settings">
           Settings

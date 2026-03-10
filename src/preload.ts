@@ -142,15 +142,27 @@ contextBridge.exposeInMainWorld('deyad', {
   getSettings: (): Promise<{
     ollamaHost: string;
     defaultModel: string;
+    aiProvider: string;
+    openaiKey: string;
+    anthropicKey: string;
+    groqKey: string;
   }> =>
     ipcRenderer.invoke('settings:get'),
 
   setSettings: (settings: {
     ollamaHost?: string;
     defaultModel?: string;
+    aiProvider?: string;
+    openaiKey?: string;
+    anthropicKey?: string;
+    groqKey?: string;
   }): Promise<{
     ollamaHost: string;
     defaultModel: string;
+    aiProvider: string;
+    openaiKey: string;
+    anthropicKey: string;
+    groqKey: string;
   }> =>
     ipcRenderer.invoke('settings:set', settings),
 
@@ -201,6 +213,32 @@ contextBridge.exposeInMainWorld('deyad', {
   // ── Git ────────────────────────────────────────────────────────────────
   gitLog: (appId: string): Promise<{ hash: string; message: string; date: string }[]> =>
     ipcRenderer.invoke('git:log', appId),
+
+  gitShow: (appId: string, hash: string, filePath: string): Promise<string | null> =>
+    ipcRenderer.invoke('git:show', appId, hash, filePath),
+
+  gitDiffStat: (appId: string, hash: string): Promise<{ status: string; path: string }[]> =>
+    ipcRenderer.invoke('git:diff-stat', appId, hash),
+
+  gitCheckout: (appId: string, hash: string): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke('git:checkout', appId, hash),
+
+  // ── Package Manager ──────────────────────────────────────────────────────
+  npmList: (appId: string): Promise<{ dependencies: Record<string, string>; devDependencies: Record<string, string> }> =>
+    ipcRenderer.invoke('npm:list', appId),
+
+  npmInstall: (appId: string, packageName: string, isDev: boolean): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke('npm:install', appId, packageName, isDev),
+
+  npmUninstall: (appId: string, packageName: string): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke('npm:uninstall', appId, packageName),
+
+  // ── Environment Variables ──────────────────────────────────────────────────
+  envRead: (appId: string): Promise<Record<string, Record<string, string>>> =>
+    ipcRenderer.invoke('env:read', appId),
+
+  envWrite: (appId: string, envFile: string, vars: Record<string, string>): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke('env:write', appId, envFile, vars),
 
   // ── Terminal ────────────────────────────────────────────────────────────
   createTerminal: (appId?: string): Promise<string> =>

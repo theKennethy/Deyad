@@ -10,6 +10,10 @@ import ImportModal from './components/ImportModal';
 import SettingsModal from './components/SettingsModal';
 import DeployModal from './components/DeployModal';
 import TaskQueuePanel from './components/TaskQueuePanel';
+import DiffModal from './components/DiffModal';
+import VersionHistoryPanel from './components/VersionHistoryPanel';
+import PackageManagerPanel from './components/PackageManagerPanel';
+import EnvVarsPanel from './components/EnvVarsPanel';
 import { taskQueue } from './lib/taskQueue';
 
 export interface AppProject {
@@ -21,7 +25,7 @@ export interface AppProject {
   dbProvider?: 'mysql' | 'postgresql';
 }
 
-type RightTab = 'editor' | 'preview' | 'terminal' | 'database';
+type RightTab = 'editor' | 'preview' | 'terminal' | 'database' | 'envvars' | 'packages';
 
 export default function App() {
   const [apps, setApps] = useState<AppProject[]>([]);
@@ -34,12 +38,16 @@ export default function App() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showDeployModal, setShowDeployModal] = useState(false);
   const [showTaskQueue, setShowTaskQueue] = useState(false);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [showEnvEditor, setShowEnvEditor] = useState(false);
+  const [showPackageManager, setShowPackageManager] = useState(false);
   const [activeTasks, setActiveTasks] = useState(0);
   const [dbStatus, setDbStatus] = useState<'none' | 'running' | 'stopped'>('none');
   const [rightTab, setRightTab] = useState<RightTab>('editor');
   const [canRevert, setCanRevert] = useState(false);
   const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
   const [mobilePanel, setMobilePanel] = useState<'sidebar' | 'chat' | 'right'>('chat');
+  const [pendingDiffFiles, setPendingDiffFiles] = useState<Record<string, string> | null>(null);
 
   // resizable panels (persist sizes in localStorage)
   const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
@@ -120,15 +128,24 @@ export default function App() {
 
   const handleFilesUpdated = useCallback(async (newFiles: Record<string, string>) => {
     if (!selectedApp) return;
-    // Snapshot current files before AI overwrites them (for undo)
+    // Show diff preview before applying (unless in agent mode which auto-applies)
+    setPendingDiffFiles(newFiles);
+  }, [selectedApp]);
+
+  const handleApplyDiff = useCallback(async () => {
+    if (!selectedApp || !pendingDiffFiles) return;
     await window.deyad.snapshotFiles(selectedApp.id, appFiles);
-    await window.deyad.writeFiles(selectedApp.id, newFiles);
-    setAppFiles((prev) => ({ ...prev, ...newFiles }));
+    await window.deyad.writeFiles(selectedApp.id, pendingDiffFiles);
+    setAppFiles((prev) => ({ ...prev, ...pendingDiffFiles }));
     setCanRevert(true);
-    // Select the first new file
-    const firstKey = Object.keys(newFiles)[0];
+    const firstKey = Object.keys(pendingDiffFiles)[0];
     if (firstKey) setSelectedFile(firstKey);
-  }, [selectedApp, appFiles]);
+    setPendingDiffFiles(null);
+  }, [selectedApp, appFiles, pendingDiffFiles]);
+
+  const handleRejectDiff = useCallback(() => {
+    setPendingDiffFiles(null);
+  }, []);
 
   const handleFileEdit = useCallback(async (filePath: string, content: string) => {
     if (!selectedApp) return;
@@ -300,6 +317,7 @@ export default function App() {
           onImportApp={() => setShowImportModal(true)}
           onOpenSettings={() => setShowSettings(true)}
           onOpenTaskQueue={() => setShowTaskQueue(true)}
+          onOpenVersionHistory={() => setShowVersionHistory(true)}
           activeTasks={activeTasks}
         />
       </aside>
@@ -381,6 +399,18 @@ export default function App() {
               >
                 Terminal
               </button>
+              <button
+                className={`right-tab ${rightTab === 'packages' ? 'active' : ''}`}
+                onClick={() => setRightTab('packages')}
+              >
+                Packages
+              </button>
+              <button
+                className={`right-tab ${rightTab === 'envvars' ? 'active' : ''}`}
+                onClick={() => setRightTab('envvars')}
+              >
+                Env
+              </button>
               {selectedApp?.appType === 'fullstack' && (
                 <button
                   className={`right-tab ${rightTab === 'database' ? 'active' : ''}`}
@@ -403,6 +433,10 @@ export default function App() {
               <PreviewPanel app={selectedApp} />
             ) : rightTab === 'terminal' ? (
               <TerminalPanel appId={selectedApp.id} />
+            ) : rightTab === 'packages' ? (
+              <PackageManagerPanel appId={selectedApp.id} />
+            ) : rightTab === 'envvars' ? (
+              <EnvVarsPanel appId={selectedApp.id} />
             ) : rightTab === 'database' ? (
               <DatabasePanel app={selectedApp} />
             ) : null}
@@ -421,6 +455,15 @@ export default function App() {
         <SettingsModal onClose={() => setShowSettings(false)} />
       )}
 
+      {pendingDiffFiles && (
+        <DiffModal
+          oldFiles={appFiles}
+          newFiles={pendingDiffFiles}
+          onApply={handleApplyDiff}
+          onReject={handleRejectDiff}
+        />
+      )}
+
       {showImportModal && (
         <ImportModal
           onClose={() => setShowImportModal(false)}
@@ -434,6 +477,18 @@ export default function App() {
           appName={selectedApp.name}
           appType={selectedApp.appType}
           onClose={() => setShowDeployModal(false)}
+        />
+      )}
+
+      {showVersionHistory && selectedApp && (
+        <VersionHistoryPanel
+          appId={selectedApp.id}
+          onClose={() => setShowVersionHistory(false)}
+          onRestore={async () => {
+            const files = await window.deyad.readFiles(selectedApp.id);
+            setAppFiles(files);
+            setSelectedFile(null);
+          }}
         />
       )}
 
