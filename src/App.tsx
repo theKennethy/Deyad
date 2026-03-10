@@ -9,6 +9,7 @@ import NewAppModal from './components/NewAppModal';
 import ImportModal from './components/ImportModal';
 import SettingsModal from './components/SettingsModal';
 import DeployModal from './components/DeployModal';
+import WelcomeWizard from './components/WelcomeWizard';
 import TaskQueuePanel from './components/TaskQueuePanel';
 import DiffModal from './components/DiffModal';
 import VersionHistoryPanel from './components/VersionHistoryPanel';
@@ -51,6 +52,7 @@ export default function App() {
   const [autocompleteEnabled, setAutocompleteEnabled] = useState(false);
   const [completionModel, setCompletionModel] = useState('');
   const [defaultModel, setDefaultModel] = useState('');
+  const [showWizard, setShowWizard] = useState(false);
 
   // resizable panels (persist sizes in localStorage)
   const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
@@ -73,6 +75,7 @@ export default function App() {
       setAutocompleteEnabled(s.autocompleteEnabled ?? false);
       setCompletionModel(s.completionModel ?? '');
       setDefaultModel(s.defaultModel ?? '');
+      if (!s.hasCompletedWizard) setShowWizard(true);
     }).catch(() => {});
   }, []);
 
@@ -441,7 +444,7 @@ export default function App() {
                 completionModel={completionModel || defaultModel}
               />
             ) : rightTab === 'preview' ? (
-              <PreviewPanel app={selectedApp} />
+              <PreviewPanel app={selectedApp} onPublish={() => setShowDeployModal(true)} />
             ) : rightTab === 'terminal' ? (
               <TerminalPanel appId={selectedApp.id} />
             ) : rightTab === 'packages' ? (
@@ -551,6 +554,18 @@ export default function App() {
           <span className="mobile-nav-label">{rightTab === 'preview' ? 'Preview' : rightTab === 'terminal' ? 'Term' : rightTab === 'database' ? 'DB' : 'Files'}</span>
         </button>
       </nav>
+
+      {showWizard && (
+        <WelcomeWizard
+          onComplete={() => {
+            setShowWizard(false);
+            window.deyad.setSettings({ hasCompletedWizard: true }).then((s) => {
+              setDefaultModel(s.defaultModel ?? '');
+            }).catch(() => {});
+          }}
+          onCreateApp={() => setShowNewAppModal(true)}
+        />
+      )}
     </div>
   );
 }

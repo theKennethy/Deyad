@@ -8,9 +8,10 @@ type DevStatus = 'stopped' | 'starting' | 'running' | 'error';
 
 interface Props {
   app: AppProject;
+  onPublish: () => void;
 }
 
-export default function PreviewPanel({ app }: Props) {
+export default function PreviewPanel({ app, onPublish }: Props) {
   const [status, setStatus] = useState<DevStatus>('stopped');
   const [logs, setLogs] = useState<string>('');
   const [showLogs, setShowLogs] = useState(false);
@@ -109,6 +110,13 @@ export default function PreviewPanel({ app }: Props) {
             title="Toggle logs"
           >
             Logs
+          </button>
+          <button
+            className="btn-preview-publish"
+            onClick={onPublish}
+            title="Deploy to web"
+          >
+            Publish
           </button>
         </div>
       </div>

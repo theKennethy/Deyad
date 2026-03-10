@@ -27,6 +27,7 @@ export interface DeyadSettings {
   autocompleteEnabled: boolean;
   completionModel: string;
   embedModel: string;
+  hasCompletedWizard: boolean;
 }
 
 export const DEFAULT_SETTINGS: DeyadSettings = {
@@ -35,6 +36,7 @@ export const DEFAULT_SETTINGS: DeyadSettings = {
   autocompleteEnabled: false,
   completionModel: '',
   embedModel: '',
+  hasCompletedWizard: false,
 };
 
 export function loadSettings(settingsPath: string): DeyadSettings {
