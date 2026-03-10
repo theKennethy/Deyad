@@ -24,6 +24,10 @@ export interface AppProject {
   createdAt: string;
   appType: 'frontend' | 'fullstack';
   dbProvider?: 'mysql' | 'postgresql';
+  /** Host port for the database (unique per app). */
+  dbPort?: number;
+  /** Host port for the admin GUI — pgAdmin or phpMyAdmin (unique per app). */
+  guiPort?: number;
 }
 
 type RightTab = 'editor' | 'preview' | 'terminal' | 'database' | 'envvars' | 'packages';
@@ -220,6 +224,8 @@ export default function App() {
         dbPassword: generatePassword(24),
         dbRootPassword: generatePassword(24),
         dbProvider: dbProvider ?? 'mysql',
+        dbPort: app.dbPort,
+        guiPort: app.guiPort,
       });
       await window.deyad.writeFiles(app.id, scaffold);
     } else {

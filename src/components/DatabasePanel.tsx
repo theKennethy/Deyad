@@ -13,9 +13,9 @@ interface Props {
   dbStatus: 'none' | 'running' | 'stopped';
 }
 
-const GUI_URLS: Record<string, string> = {
-  mysql: 'http://localhost:8080',
-  postgresql: 'http://localhost:5050',
+const DEFAULT_GUI_PORTS: Record<string, number> = {
+  mysql: 8080,
+  postgresql: 5050,
 };
 
 const GUI_LABELS: Record<string, string> = {
@@ -30,7 +30,8 @@ export default function DatabasePanel({ app, dbStatus }: Props) {
   const [view, setView] = useState<ViewMode>('gui');
 
   const provider = app.dbProvider ?? 'mysql';
-  const guiUrl = GUI_URLS[provider];
+  const guiPort = app.guiPort ?? DEFAULT_GUI_PORTS[provider];
+  const guiUrl = `http://localhost:${guiPort}`;
   const guiLabel = GUI_LABELS[provider];
 
   useEffect(() => {

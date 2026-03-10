@@ -29,6 +29,8 @@ interface AppProject {
   createdAt: string;
   appType: AppType;
   dbProvider?: DbProvider;
+  dbPort?: number;
+  guiPort?: number;
 }
 
 interface UiMessage {

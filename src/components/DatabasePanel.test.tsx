@@ -11,9 +11,11 @@ const fullApp = {
   createdAt: new Date().toISOString(),
   appType: 'fullstack' as const,
   dbProvider: 'mysql' as const,
+  dbPort: 13306,
+  guiPort: 18080,
 };
 
-const pgApp = { ...fullApp, id: 'pg1', dbProvider: 'postgresql' as const };
+const pgApp = { ...fullApp, id: 'pg1', dbProvider: 'postgresql' as const, dbPort: 15432, guiPort: 15050 };
 
 const simpleSchema = {
   tables: [
@@ -50,14 +52,14 @@ describe('DatabasePanel', () => {
     const { container } = render(<DatabasePanel app={fullApp} dbStatus="running" />);
     const iframe = container.querySelector('iframe');
     expect(iframe).toBeTruthy();
-    expect(iframe?.src).toContain('8080');
+    expect(iframe?.src).toContain('18080');
   });
 
   it('renders iframe when DB is running (postgresql)', () => {
     const { container } = render(<DatabasePanel app={pgApp} dbStatus="running" />);
     const iframe = container.querySelector('iframe');
     expect(iframe).toBeTruthy();
-    expect(iframe?.src).toContain('5050');
+    expect(iframe?.src).toContain('15050');
   });
 
   it('switches to schema view and shows tables', async () => {

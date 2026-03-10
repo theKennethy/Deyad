@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateFrontendScaffold, generateFullStackScaffold } from '../lib/scaffoldGenerator';
+import { generateFrontendScaffold, generateFullStackScaffold, allocatePorts } from '../lib/scaffoldGenerator';
 
 describe('generateFrontendScaffold', () => {
   const opts = { appName: 'My App', description: 'A test app' };
@@ -331,6 +331,61 @@ describe('generateFullStackScaffold (PostgreSQL)', () => {
     expect(files['docker-compose.yml']).toContain('mysql:8.0');
     expect(files['backend/prisma/schema.prisma']).toContain('provider = "mysql"');
     expect(files['backend/.env']).toContain('mysql://');
+  });
+});
+
+describe('allocatePorts', () => {
+  it('returns two different ports in the valid range', () => {
+    const [db, gui] = allocatePorts('test-app-123');
+    expect(db).toBeGreaterThanOrEqual(10000);
+    expect(db).toBeLessThan(60000);
+    expect(gui).toBe(db + 1);
+  });
+
+  it('returns different ports for different app IDs', () => {
+    const [db1] = allocatePorts('app-alpha');
+    const [db2] = allocatePorts('app-beta');
+    expect(db1).not.toBe(db2);
+  });
+
+  it('is deterministic for the same app ID', () => {
+    const a = allocatePorts('stable-id');
+    const b = allocatePorts('stable-id');
+    expect(a).toEqual(b);
+  });
+});
+
+describe('generateFullStackScaffold with custom ports', () => {
+  it('uses provided dbPort and guiPort in PostgreSQL compose', () => {
+    const files = generateFullStackScaffold({
+      appName: 'Custom',
+      description: 'test',
+      dbName: 'db',
+      dbUser: 'usr',
+      dbPassword: 'pw',
+      dbProvider: 'postgresql',
+      dbPort: 25432,
+      guiPort: 25050,
+    });
+    expect(files['docker-compose.yml']).toContain("'25432:5432'");
+    expect(files['docker-compose.yml']).toContain("'25050:80'");
+    expect(files['backend/.env']).toContain('localhost:25432');
+  });
+
+  it('uses provided dbPort and guiPort in MySQL compose', () => {
+    const files = generateFullStackScaffold({
+      appName: 'Custom',
+      description: 'test',
+      dbName: 'db',
+      dbUser: 'usr',
+      dbPassword: 'pw',
+      dbProvider: 'mysql',
+      dbPort: 23306,
+      guiPort: 28080,
+    });
+    expect(files['docker-compose.yml']).toContain("'23306:3306'");
+    expect(files['docker-compose.yml']).toContain("'28080:80'");
+    expect(files['backend/.env']).toContain('localhost:23306');
   });
 });
 

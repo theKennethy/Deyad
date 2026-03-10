@@ -193,13 +193,12 @@ const createWindow = () => {
   mainWindow.webContents.session.clearCache().then(() => {
 
     // Strip X-Frame-Options & CSP frame-ancestors from local DB admin tools
-    // (phpMyAdmin :8080, pgAdmin :5050) so they can be embedded in iframes.
-    // We use a broad filter and check URLs in the callback to avoid Electron
-    // probing the registered URL patterns and logging ERR_CONNECTION_REFUSED.
+    // so they can be embedded in iframes. Each app gets unique ports, so we
+    // match any localhost URL and strip framing headers broadly.
     mainWindow.webContents.session.webRequest.onHeadersReceived(
       (details, callback) => {
         const url = details.url;
-        if (!url.startsWith('http://localhost:8080/') && !url.startsWith('http://localhost:5050/')) {
+        if (!url.startsWith('http://localhost:')) {
           callback({ cancel: false });
           return;
         }
@@ -428,8 +427,12 @@ ipcMain.handle('apps:create', async (_event, { name, description, appType, dbPro
     createdAt: new Date().toISOString(),
     appType: resolvedAppType,
   };
-  if (resolvedAppType === 'fullstack' && dbProvider) {
-    meta.dbProvider = dbProvider;
+  if (resolvedAppType === 'fullstack') {
+    if (dbProvider) meta.dbProvider = dbProvider;
+    // Allocate unique host ports so multiple apps don't collide
+    const [dbPort, guiPort] = allocateAppPorts(id);
+    meta.dbPort = dbPort;
+    meta.guiPort = guiPort;
   }
   fs.writeFileSync(path.join(dir, 'deyad.json'), JSON.stringify(meta, null, 2));
   await gitInit(id);
@@ -587,6 +590,19 @@ ipcMain.handle('apps:dev-stop', async (event, appId: string) => {
 ipcMain.handle('apps:dev-status', (_event, appId: string) => ({
   status: devProcesses.has(appId) ? 'running' : 'stopped',
 }));
+
+// ── Port Allocation ─────────────────────────────────────────────────────────
+
+/** Derive two unique host ports from an app ID so apps don't collide. */
+function allocateAppPorts(appId: string): [number, number] {
+  let h = 0;
+  for (let i = 0; i < appId.length; i++) {
+    h = ((h << 5) - h + appId.charCodeAt(i)) | 0;
+  }
+  const dbPort = ((h >>> 0) % 50000) + 10000; // 10000–59999
+  const guiPort = dbPort + 1;
+  return [dbPort, guiPort];
+}
 
 // ── Container Engine (Podman / Docker) ──────────────────────────────────────
 

@@ -191,6 +191,27 @@ export interface ScaffoldOptions {
   dbRootPassword?: string;
   /** Database provider. Defaults to 'mysql' for backward compatibility. */
   dbProvider?: DbProvider;
+  /** Host port for the DB (mapped to container 5432/3306). Auto-assigned if omitted. */
+  dbPort?: number;
+  /** Host port for the admin GUI (pgAdmin/phpMyAdmin, mapped to container 80). Auto-assigned if omitted. */
+  guiPort?: number;
+}
+
+/**
+ * Derive two unique, deterministic host ports from an app ID so that
+ * multiple fullstack apps can run side-by-side without conflicts.
+ *
+ * Returns [dbPort, guiPort] where both are in the 10000–59999 range.
+ * The two ports are guaranteed to differ from each other.
+ */
+export function allocatePorts(appId: string): [number, number] {
+  let h = 0;
+  for (let i = 0; i < appId.length; i++) {
+    h = ((h << 5) - h + appId.charCodeAt(i)) | 0;
+  }
+  const dbPort = ((h >>> 0) % 50000) + 10000; // 10000–59999
+  const guiPort = dbPort + 1;
+  return [dbPort, guiPort];
 }
 
 /**
@@ -210,6 +231,8 @@ export function generateFullStackScaffold(opts: ScaffoldOptions): Record<string,
   const dbRootPassword = opts.dbRootPassword ?? opts.dbPassword;
   const dbProvider: DbProvider = opts.dbProvider ?? 'mysql';
   const isPostgres = dbProvider === 'postgresql';
+  const hostDbPort = opts.dbPort ?? (isPostgres ? 5433 : 3306);
+  const hostGuiPort = opts.guiPort ?? (isPostgres ? 5050 : 8080);
 
   const dockerCompose = isPostgres
     ? `version: '3.9'
@@ -224,7 +247,7 @@ services:
       POSTGRES_USER: ${dbUser}
       POSTGRES_PASSWORD: ${dbPassword}
     ports:
-      - '5433:5432'
+      - '${hostDbPort}:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -242,7 +265,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: ${dbPassword}
     ports:
-      - '5050:80'
+      - '${hostGuiPort}:80'
     depends_on:
       postgres:
         condition: service_healthy
@@ -263,7 +286,7 @@ services:
       MYSQL_USER: ${dbUser}
       MYSQL_PASSWORD: ${dbPassword}
     ports:
-      - '3306:3306'
+      - '${hostDbPort}:3306'
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
@@ -283,7 +306,7 @@ services:
       PMA_USER: ${dbUser}
       PMA_PASSWORD: ${dbPassword}
     ports:
-      - '8080:80'
+      - '${hostGuiPort}:80'
     depends_on:
       mysql:
         condition: service_healthy
@@ -292,7 +315,7 @@ volumes:
   mysql_data:
 `;
 
-  const dbPort = isPostgres ? '5433' : '3306';
+  const dbPort = String(hostDbPort);
   const dbProtocol = isPostgres ? 'postgresql' : 'mysql';
   const prismaProvider = isPostgres ? 'postgresql' : 'mysql';
   const dbLabel = isPostgres ? 'PostgreSQL 16' : 'MySQL 8';
@@ -751,12 +774,12 @@ Frontend runs at **http://localhost:5173**
 ### 4. Open the database admin UI
 
 ${isPostgres
-  ? `pgAdmin is available at **http://localhost:5050**
+  ? `pgAdmin is available at **http://localhost:${hostGuiPort}**
 
 Login with:
 - **Email:** admin@admin.com
 - **Password:** (your DB password)`
-  : `phpMyAdmin is available at **http://localhost:8080**
+  : `phpMyAdmin is available at **http://localhost:${hostGuiPort}**
 
 Login with:
 - **Username:** ${dbUser}
