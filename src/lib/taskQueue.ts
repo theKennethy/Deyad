@@ -29,6 +29,7 @@ export interface TaskQueueItem {
 }
 
 type Listener = () => void;
+type FilesChangedCallback = (appId: string) => void;
 
 const STORAGE_KEY = 'deyad-task-queue';
 const MAX_HISTORY = 50;
@@ -38,6 +39,7 @@ class TaskQueue {
   private listeners: Set<Listener> = new Set();
   private running = false;
   private abortCurrent: (() => void) | null = null;
+  private onFilesChanged: FilesChangedCallback | null = null;
 
   constructor() {
     this.load();
@@ -54,6 +56,11 @@ class TaskQueue {
   subscribe(fn: Listener): () => void {
     this.listeners.add(fn);
     return () => this.listeners.delete(fn);
+  }
+
+  /** Register a callback invoked when a task finishes and files may have changed. */
+  setOnFilesChanged(fn: FilesChangedCallback | null) {
+    this.onFilesChanged = fn;
   }
 
   private notify() {
@@ -189,6 +196,7 @@ class TaskQueue {
           this.abortCurrent = null;
           this.trimHistory();
           this.notify();
+          if (this.onFilesChanged) this.onFilesChanged(next.appId);
           this.processNext();
         },
         onError: (error: string) => {

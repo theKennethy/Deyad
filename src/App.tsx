@@ -94,6 +94,17 @@ export default function App() {
     return unsub;
   }, []);
 
+  // Auto-refresh file tree when a background task completes
+  useEffect(() => {
+    taskQueue.setOnFilesChanged(async (appId) => {
+      if (selectedApp?.id === appId) {
+        const files = await window.deyad.readFiles(appId);
+        setAppFiles(files);
+      }
+    });
+    return () => taskQueue.setOnFilesChanged(null);
+  }, [selectedApp]);
+
   // persist when sizes change (sidebar & right panel) and update CSS variables
   useEffect(() => {
     localStorage.setItem('sidebarWidth', sidebarWidth.toString());
@@ -531,7 +542,7 @@ export default function App() {
           appType={selectedApp.appType}
           dbProvider={selectedApp.dbProvider}
           dbStatus={dbStatus}
-          model=""
+          model={defaultModel}
           onClose={() => setShowTaskQueue(false)}
           onRefreshFiles={async () => {
             const files = await window.deyad.readFiles(selectedApp.id);

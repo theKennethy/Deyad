@@ -34,6 +34,8 @@ export default function DeployModal({ appId, appName, appType, onClose }: Props)
   const [logs, setLogs] = useState('');
   const [result, setResult] = useState<{ success: boolean; url?: string; error?: string } | null>(null);
   const logRef = useRef<HTMLPreElement>(null);
+  const [mobileStatus, setMobileStatus] = useState<string | null>(null);
+  const [mobileWorking, setMobileWorking] = useState(false);
 
   useEffect(() => {
     checkCLIs();
@@ -149,6 +151,58 @@ export default function DeployModal({ appId, appName, appType, onClose }: Props)
               )}
             </>
           )}
+
+          {/* ── Mobile / Capacitor ──────────────────────────────────── */}
+          <div className="deploy-mobile-section">
+            <h3>Mobile Build (Capacitor)</h3>
+            <p className="deploy-hint">
+              Initialize Capacitor, then open in Android Studio or Xcode.
+            </p>
+            <div className="deploy-mobile-buttons">
+              <button
+                className="btn-secondary"
+                disabled={mobileWorking}
+                onClick={async () => {
+                  setMobileWorking(true);
+                  setMobileStatus(null);
+                  const res = await window.deyad.capacitorInit(appId);
+                  if (res.alreadyInitialized) setMobileStatus('Capacitor already initialized.');
+                  else if (res.success) setMobileStatus('Capacitor initialized successfully!');
+                  else setMobileStatus(`Init failed: ${res.error}`);
+                  setMobileWorking(false);
+                }}
+              >
+                {mobileWorking ? 'Working…' : 'Initialize Capacitor'}
+              </button>
+              <button
+                className="btn-secondary"
+                disabled={mobileWorking}
+                onClick={async () => {
+                  setMobileWorking(true);
+                  setMobileStatus(null);
+                  const res = await window.deyad.capacitorOpen(appId, 'android');
+                  setMobileStatus(res.success ? 'Android Studio opened.' : `Error: ${res.error}`);
+                  setMobileWorking(false);
+                }}
+              >
+                Open Android
+              </button>
+              <button
+                className="btn-secondary"
+                disabled={mobileWorking}
+                onClick={async () => {
+                  setMobileWorking(true);
+                  setMobileStatus(null);
+                  const res = await window.deyad.capacitorOpen(appId, 'ios');
+                  setMobileStatus(res.success ? 'Xcode opened.' : `Error: ${res.error}`);
+                  setMobileWorking(false);
+                }}
+              >
+                Open iOS
+              </button>
+            </div>
+            {mobileStatus && <div className="deploy-mobile-status">{mobileStatus}</div>}
+          </div>
 
           <div className="modal-actions">
             <button type="button" className="btn-secondary" onClick={onClose} disabled={deploying}>

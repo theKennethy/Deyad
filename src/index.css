@@ -2051,6 +2051,32 @@ body {
 }
 .btn-deploy:hover { background: #059669 !important; }
 
+/* ─── Mobile / Capacitor section ─────────────────────────────────────────── */
+.deploy-mobile-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.deploy-mobile-section h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+.deploy-mobile-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.deploy-mobile-status {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: var(--bg-elevated);
+  border-radius: 6px;
+}
+
 /* ─── Task Queue Modal / Panel ───────────────────────────────────────────── */
 .task-queue-modal { max-width: 600px; max-height: 80vh; }
 .task-queue-modal .modal-body { overflow-y: auto; max-height: calc(80vh - 60px); }

@@ -880,6 +880,7 @@ function copyRecursiveSync(src: string, dest: string) {
   if (isDirectory) {
     fs.mkdirSync(dest, { recursive: true });
     fs.readdirSync(src).forEach((childItemName) => {
+      if (childItemName === 'node_modules' || childItemName === '.git') return;
       copyRecursiveSync(path.join(src, childItemName), path.join(dest, childItemName));
     });
   } else {
