@@ -452,7 +452,7 @@ export default function App() {
             ) : rightTab === 'envvars' ? (
               <EnvVarsPanel appId={selectedApp.id} />
             ) : rightTab === 'database' ? (
-              <DatabasePanel app={selectedApp} />
+              <DatabasePanel app={selectedApp} dbStatus={dbStatus} />
             ) : null}
           </>
         )}

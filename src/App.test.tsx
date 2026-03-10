@@ -153,6 +153,9 @@ describe('App component', () => {
     expect(dbBtn).toBeInTheDocument();
     fireEvent.click(dbBtn);
 
+    // Switch to Schema view (default is embedded GUI view)
+    fireEvent.click(await screen.findByText('Schema'));
+
     await waitFor(() => expect(container.querySelector('.db-table-name')).toHaveTextContent('Things'));
   });
 
