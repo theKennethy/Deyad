@@ -1318,6 +1318,99 @@ ipcMain.handle('apps:capacitor-open', async (_event, appId: string, platform: 'a
   }
 });
 
+/** Helper: resolve the Capacitor working directory for an app */
+function capWebDir(appId: string): string {
+  const dir = appDir(appId);
+  try {
+    const meta = JSON.parse(fs.readFileSync(path.join(dir, 'deyad.json'), 'utf-8'));
+    if (meta.appType === 'fullstack') return path.join(dir, 'frontend');
+  } catch { /* default */ }
+  return dir;
+}
+
+/** Helper: get the first non-internal IPv4 address */
+function getLocalIp(): string {
+  const ifaces = os.networkInterfaces();
+  for (const ifaceList of Object.values(ifaces)) {
+    if (!ifaceList) continue;
+    for (const iface of ifaceList) {
+      if (iface.family === 'IPv4' && !iface.internal) return iface.address;
+    }
+  }
+  return '127.0.0.1';
+}
+
+ipcMain.handle('apps:capacitor-list-devices', async (_event, appId: string, platform: 'android' | 'ios') => {
+  const webDir = capWebDir(appId);
+  try {
+    const { stdout } = await execFileAsync('npx', ['cap', 'run', platform, '--list'], { cwd: webDir, timeout: 30_000 });
+    // Parse device lines — each non-empty line after header is a device
+    const lines = stdout.split('\n').map((l) => l.trim()).filter(Boolean);
+    const devices: Array<{ id: string; name: string }> = [];
+    for (const line of lines) {
+      // Skip header/info lines that don't look like device entries
+      if (line.startsWith('--') || line.toLowerCase().includes('name') && line.toLowerCase().includes('api')) continue;
+      // Device lines typically: "Pixel_7_API_34 (emulator)" or "adb:XXXXX"
+      const id = line.split(/\s+/)[0];
+      if (id) devices.push({ id, name: line });
+    }
+    return { success: true, devices };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { success: false, devices: [], error: msg };
+  }
+});
+
+ipcMain.handle('apps:capacitor-run', async (_event, appId: string, platform: 'android' | 'ios', target: string) => {
+  const webDir = capWebDir(appId);
+  try {
+    // Build and sync first
+    await execFileAsync('npx', ['vite', 'build'], { cwd: webDir, timeout: 120_000 });
+    await execFileAsync('npx', ['cap', 'sync'], { cwd: webDir, timeout: 60_000 });
+    // Deploy to the specific device/emulator
+    await execFileAsync('npx', ['cap', 'run', platform, '--target', target], { cwd: webDir, timeout: 180_000 });
+    return { success: true };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { success: false, error: msg };
+  }
+});
+
+ipcMain.handle('apps:capacitor-live-reload', async (_event, appId: string, platform: 'android' | 'ios', enable: boolean, devPort?: number) => {
+  const webDir = capWebDir(appId);
+  const configPath = path.join(webDir, 'capacitor.config.ts');
+  if (!fs.existsSync(configPath)) return { success: false, error: 'Capacitor not initialized. Run Initialize first.' };
+
+  try {
+    let config = fs.readFileSync(configPath, 'utf-8');
+
+    if (enable) {
+      const ip = getLocalIp();
+      const port = devPort || 5173;
+      const serverBlock = `  server: {\n    url: 'http://${ip}:${port}',\n    cleartext: true,\n  },`;
+
+      // Replace existing server block or insert before closing brace
+      if (config.includes('server:')) {
+        config = config.replace(/\s*server:\s*\{[^}]*\},?/s, '\n' + serverBlock);
+      } else {
+        config = config.replace(/(webDir:\s*'[^']*',?)/, `$1\n${serverBlock}`);
+      }
+    } else {
+      // Remove the live-reload server.url — restore to default androidScheme-only
+      const defaultServer = `  server: {\n    androidScheme: 'https',\n  },`;
+      config = config.replace(/\s*server:\s*\{[^}]*\},?/s, '\n' + defaultServer);
+    }
+
+    fs.writeFileSync(configPath, config);
+    // Sync the config change to native projects
+    await execFileAsync('npx', ['cap', 'sync'], { cwd: webDir, timeout: 60_000 });
+    return { success: true, ip: enable ? getLocalIp() : undefined };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { success: false, error: msg };
+  }
+});
+
 // ── Deploy ──────────────────────────────────────────────────────────────────
 
 ipcMain.handle('apps:deploy-check', async () => {

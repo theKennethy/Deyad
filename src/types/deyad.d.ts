@@ -168,6 +168,9 @@ interface DeyadAPI {
   // Capacitor (Mobile)
   capacitorInit(appId: string): Promise<{ success: boolean; alreadyInitialized?: boolean; error?: string }>;
   capacitorOpen(appId: string, platform: 'android' | 'ios'): Promise<{ success: boolean; error?: string }>;
+  capacitorListDevices(appId: string, platform: 'android' | 'ios'): Promise<{ success: boolean; devices: Array<{ id: string; name: string }>; error?: string }>;
+  capacitorRun(appId: string, platform: 'android' | 'ios', target: string): Promise<{ success: boolean; error?: string }>;
+  capacitorLiveReload(appId: string, platform: 'android' | 'ios', enable: boolean, devPort?: number): Promise<{ success: boolean; ip?: string; error?: string }>;
 
   // Deploy
   deployCheck(): Promise<Record<string, boolean>>;

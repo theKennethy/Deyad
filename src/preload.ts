@@ -194,6 +194,15 @@ contextBridge.exposeInMainWorld('deyad', {
   capacitorOpen: (appId: string, platform: 'android' | 'ios'): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke('apps:capacitor-open', appId, platform),
 
+  capacitorListDevices: (appId: string, platform: 'android' | 'ios'): Promise<{ success: boolean; devices: Array<{ id: string; name: string }>; error?: string }> =>
+    ipcRenderer.invoke('apps:capacitor-list-devices', appId, platform),
+
+  capacitorRun: (appId: string, platform: 'android' | 'ios', target: string): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke('apps:capacitor-run', appId, platform, target),
+
+  capacitorLiveReload: (appId: string, platform: 'android' | 'ios', enable: boolean, devPort?: number): Promise<{ success: boolean; ip?: string; error?: string }> =>
+    ipcRenderer.invoke('apps:capacitor-live-reload', appId, platform, enable, devPort),
+
   // ── Deploy ─────────────────────────────────────────────────────────────
   deployCheck: (): Promise<Record<string, boolean>> =>
     ipcRenderer.invoke('apps:deploy-check'),
