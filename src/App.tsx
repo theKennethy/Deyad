@@ -218,6 +218,7 @@ export default function App() {
       // Write scaffold files with randomly-generated DB credentials
       const { generateFullStackScaffold } = await import('./lib/scaffoldGenerator');
       const { generatePassword } = await import('./lib/crypto');
+      const settings = await window.deyad.getSettings();
       const scaffold = generateFullStackScaffold({
         appName: name,
         description,
@@ -226,6 +227,8 @@ export default function App() {
         dbPassword: generatePassword(24),
         dbPort: app.dbPort,
         guiPort: app.guiPort,
+        pgAdminEmail: settings.pgAdminEmail,
+        pgAdminPassword: settings.pgAdminPassword,
       });
       await window.deyad.writeFiles(app.id, scaffold);
     } else {

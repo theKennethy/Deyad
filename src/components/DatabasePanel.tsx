@@ -21,6 +21,8 @@ export default function DatabasePanel({ app, dbStatus }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<ViewMode>('gui');
   const [portReady, setPortReady] = useState(false);
+  const [pgEmail, setPgEmail] = useState('admin@admin.com');
+  const [pgPassword, setPgPassword] = useState('admin');
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const guiPort = app.guiPort ?? DEFAULT_GUI_PORT;
@@ -45,6 +47,13 @@ export default function DatabasePanel({ app, dbStatus }: Props) {
     check();
     return () => { cancelled = true; if (pollRef.current) clearTimeout(pollRef.current); };
   }, [dbStatus, guiPort]);
+
+  useEffect(() => {
+    window.deyad.getSettings().then((s) => {
+      setPgEmail(s.pgAdminEmail ?? 'admin@admin.com');
+      setPgPassword(s.pgAdminPassword ?? 'admin');
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (app.appType !== 'fullstack') return;
@@ -102,12 +111,17 @@ export default function DatabasePanel({ app, dbStatus }: Props) {
               <p>Waiting for pgAdmin to be ready on port {guiPort}.</p>
             </div>
           ) : (
-            <iframe
-              key={`pgadmin-${dbStatus}`}
-              src={guiUrl}
-              className="db-gui-iframe"
-              title="pgAdmin"
-            />
+            <>
+              <div className="db-gui-credentials">
+                <span>Login: <strong>{pgEmail}</strong> / <strong>{pgPassword}</strong></span>
+              </div>
+              <iframe
+                key={`pgadmin-${dbStatus}`}
+                src={guiUrl}
+                className="db-gui-iframe"
+                title="pgAdmin"
+              />
+            </>
           )}
         </div>
       )}
