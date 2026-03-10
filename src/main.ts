@@ -1,5 +1,8 @@
 import { app, BrowserWindow, dialog, ipcMain, net, shell } from 'electron';
 
+// Suppress GLib-GObject signal handler warnings on Linux (harmless Chromium/GTK noise)
+app.commandLine.appendSwitch('log-level', '3');
+
 // disable hardware acceleration to avoid GPU spikes when rendering chat
 app.disableHardwareAcceleration();
 import os from 'os';

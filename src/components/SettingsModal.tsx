@@ -201,14 +201,15 @@ export default function SettingsModal({ onClose }: Props) {
             />
           </div>
 
-          <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={onClose}>
-              Cancel
-            </button>
-            <button className="btn-primary" onClick={handleSave} disabled={saving}>
-              {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save Settings'}
-            </button>
-          </div>
+        </div>
+
+        <div className="modal-actions settings-modal-footer">
+          <button type="button" className="btn-secondary" onClick={onClose}>
+            Cancel
+          </button>
+          <button className="btn-primary" onClick={handleSave} disabled={saving}>
+            {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save Settings'}
+          </button>
         </div>
       </div>
     </div>

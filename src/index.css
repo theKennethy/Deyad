@@ -1373,6 +1373,12 @@ body {
 /* ─── Settings Modal ─────────────────────────────────────────────────────── */
 .settings-modal {
   max-width: 480px;
+  max-height: 90vh;
+}
+.settings-modal-footer {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
 }
 .settings-host-row {
   display: flex;
