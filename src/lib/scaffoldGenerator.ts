@@ -237,7 +237,7 @@ export function generateFullStackScaffold(opts: ScaffoldOptions): Record<string,
 
 services:
   postgres:
-    image: postgres:16
+    image: postgres:17
     container_name: ${sanitize(appName)}_postgres
     restart: unless-stopped
     environment:
@@ -256,7 +256,7 @@ services:
       start_period: 30s
 
   pgadmin:
-    image: dpage/pgadmin4:8
+    image: dpage/pgadmin4:latest
     container_name: ${sanitize(appName)}_pgadmin
     restart: unless-stopped
     environment:
