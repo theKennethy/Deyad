@@ -269,8 +269,9 @@ export default function App() {
   const handleDbToggle = async () => {
     if (!selectedApp) return;
     if (dbStatus === 'running') {
+      setDbStatus('stopped');
       const result = await window.deyad.dbStop(selectedApp.id);
-      if (result.success) setDbStatus('stopped');
+      if (!result.success) setDbStatus('running');
     } else {
       setDbStatus('stopped'); // optimistic
       const result = await window.deyad.dbStart(selectedApp.id);

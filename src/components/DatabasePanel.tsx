@@ -84,6 +84,7 @@ export default function DatabasePanel({ app, dbStatus }: Props) {
             </div>
           ) : (
             <iframe
+              key={`${provider}-${dbStatus}`}
               src={guiUrl}
               className="db-gui-iframe"
               title={guiLabel}

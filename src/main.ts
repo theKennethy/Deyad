@@ -647,8 +647,9 @@ ipcMain.handle('docker:db-start', async (event, appId: string) => {
 
 ipcMain.handle('docker:db-stop', async (event, appId: string) => {
   try {
-    await stopCompose(appId);
+    // Notify renderer immediately so the iframe is removed before pgAdmin dies
     event.sender.send('docker:db-status', { appId, status: 'stopped' });
+    await stopCompose(appId);
     return { success: true };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
