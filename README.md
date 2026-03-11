@@ -54,7 +54,7 @@ You describe your app in chat
 | Image → Code (vision models) | **Yes** | Yes | Yes | Yes | No | Yes |
 | Live preview | **Yes** | Yes | Yes | No | Yes | Yes |
 | Integrated terminal | **Yes** | Partial | No | Yes | No | No |
-| Deploy (6 cloud/hosting targets) | **Yes** | Yes | Yes | No | Yes | Vercel only |
+| Deploy (7 targets incl. VPS) | **Yes** | Yes | Yes | No | Yes | Vercel only |
 | Desktop app packaging (Electron) | **Yes** | No | No | No | No | No |
 | Built-in Ollama in packaged apps | **Yes** | No | No | No | No | No |
 | Mobile preview (Capacitor) | **Yes** | No | No | No | No | No |
@@ -112,7 +112,7 @@ You describe your app in chat
 
 ### Deployment
 
-Deploy to 6 targets directly from the app:
+Deploy to 7 targets directly from the app:
 
 | Provider | Type | Pricing |
 | --- | --- | --- |
@@ -121,11 +121,16 @@ Deploy to 6 targets directly from the app:
 | **Surge** | Static sites | Free |
 | **Railway** | Full-stack with database | Usage-based |
 | **Fly.io** | Container-based | Free tier |
+| **VPS (SSH + rsync)** | Any Linux server via SSH | Your own server |
 | **Electron Desktop** | Standalone desktop app (Linux/Win/Mac) | Free |
 
+- **VPS deploy** — build your frontend and rsync the dist to any Linux server over SSH
+  - Configure user, host, remote path, and SSH port from the UI
+  - Input validation prevents shell injection
 - **Desktop packaging** — build a standalone Electron app with built-in Ollama AI bridge
   - Generated apps ship with `window.ollama` API for chat, generate, model listing
   - Targets: AppImage (Linux), exe/NSIS (Windows), DMG (macOS)
+- **Mobile preview** — test your app on a connected Android/iOS device via Capacitor
 - CLI auto-detection — shows which deploy tools are installed and ready
 - Streaming deploy logs in real-time
 - **ZIP export** — download your project as an archive
@@ -230,10 +235,11 @@ npm run lint    # Lint TypeScript files
 
 ## Packaging
 
-GitHub Actions builds Linux and Windows installers automatically on push to `main`.
-
 ```bash
-npm run make    # Build locally — outputs to out/make/
+npm run dist          # Build for current platform
+npm run dist:linux    # Linux (deb, rpm, AppImage)
+npm run dist:win      # Windows (exe/NSIS)
+npm run dist:all      # Linux + Windows
 ```
 
 Produces `.deb`, `.rpm`, and AppImage on Linux, `.exe` on Windows.
