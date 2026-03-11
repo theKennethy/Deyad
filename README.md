@@ -1,13 +1,11 @@
-<p align="center">
-  <img src="https://img.shields.io/badge/Electron-40-47848F?logo=electron&logoColor=white" alt="Electron" />
-  <img src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black" alt="React" />
-  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Ollama-Local%20AI-000000" alt="Ollama" />
-  <img src="https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
-  <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT" />
-</p>
-
 # Deyad
+
+![Electron](https://img.shields.io/badge/Electron-40-47848F?logo=electron&logoColor=white)
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![Ollama](https://img.shields.io/badge/Ollama-Local%20AI-000000)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)
+![MIT](https://img.shields.io/badge/License-MIT-green)
 
 **The open-source, local-first AI app builder.** Describe what you want, get a working app — frontend or full-stack — without sending a single byte to the cloud.
 
@@ -19,7 +17,7 @@ Deyad runs [Ollama](https://ollama.ai) on your machine for AI inference, scaffol
 
 ## How It Works
 
-```
+```text
 You describe your app in chat
     → Deyad's autonomous agent reads your codebase
     → Plans the approach
@@ -35,7 +33,7 @@ You describe your app in chat
 ## Feature Comparison
 
 | Feature | **Deyad** | **Bolt.new** | **Lovable** | **Cursor** | **Base44** | **v0** |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | **AI Platform** | **Ollama (local)** | Cloud LLM | Cloud LLM | Cloud LLM | Cloud LLM | Cloud LLM |
 | 100% offline / local AI | **Yes** | No | No | No | No | No |
 | Free forever (no token limits) | **Yes** | No | No | No | No | No |
@@ -66,6 +64,7 @@ You describe your app in chat
 ## Features
 
 ### Autonomous AI Agent
+
 - **Multi-step agent loop** — reads code, writes files, runs commands, fixes errors, iterates up to 30 times
 - **8 agent tools**: `list_files`, `read_file`, `write_files`, `edit_file`, `multi_edit`, `run_command`, `search_files`, `db_schema`
 - **Error auto-detection** — watches Vite dev server logs, auto-sends up to 3 fix attempts
@@ -77,6 +76,7 @@ You describe your app in chat
 - **Context compaction** — auto-summarizes older turns to stay within token limits (~32k)
 
 ### Built-in IDE
+
 - **Monaco editor** — same engine as VS Code, syntax highlighting for 15+ languages
 - **File tree** — nested directory view with search (Ctrl/Cmd+P)
 - **Live preview** — embedded Vite dev server with run/stop/refresh controls
@@ -86,6 +86,7 @@ You describe your app in chat
 - **Diff preview** — review AI changes before accepting, with snapshot-based undo
 
 ### Database
+
 - **PostgreSQL 17** — containerized via Docker/Podman, auto-configured
 - **Prisma ORM** — type-safe schema management
 - **pgAdmin** — embedded database admin UI inside the app
@@ -93,6 +94,7 @@ You describe your app in chat
 - **Schema introspection** — AI agent can query live table structure while coding
 
 ### Version Control
+
 - **Auto-commit** — every AI generation is committed to Git automatically
 - **Version history** — browse all commits in a timeline
 - **One-click restore** — revert to any previous version
@@ -100,10 +102,11 @@ You describe your app in chat
 - **Snapshot undo** — revert to the state before the last AI generation
 
 ### Deployment
+
 Deploy to 5 targets directly from the app:
 
 | Provider | Type | Pricing |
-|---|---|---|
+| --- | --- | --- |
 | **Vercel** | Frontend & full-stack | Free tier |
 | **Netlify** | Frontend & full-stack | Free tier |
 | **Surge** | Static sites | Free |
@@ -116,10 +119,13 @@ Deploy to 5 targets directly from the app:
 - **PWA export** — mobile-ready with Web App Manifest
 
 ### Templates
+
 Start from a template or go blank:
+
 - Todo App · Dashboard · Landing Page · Chat UI · Blog · E-commerce
 
 ### Plugins
+
 Drop custom templates into the `plugins/` directory with a `plugin.json` manifest. Auto-discovered on startup.
 
 ---
@@ -127,7 +133,7 @@ Drop custom templates into the `plugins/` directory with a `plugin.json` manifes
 ## Tech Stack
 
 | Layer | Technology |
-|---|---|
+| --- | --- |
 | Desktop | Electron 40 + Vite |
 | Renderer | React 18 + TypeScript |
 | Editor | Monaco (VS Code engine) |
@@ -146,7 +152,7 @@ Drop custom templates into the `plugins/` directory with a `plugin.json` manifes
 ## Requirements
 
 | Requirement | Why | Required? |
-|---|---|---|
+| --- | --- | --- |
 | [Node.js >= 18](https://nodejs.org) | Run the app | Yes |
 | [Ollama](https://ollama.ai) | Local AI inference | Yes |
 | [Docker](https://docker.com) or [Podman](https://podman.io) | Database containers | For full-stack apps |
@@ -184,7 +190,7 @@ On first launch, the **Welcome Wizard** walks you through connecting to Ollama a
 
 ### Full-Stack Project Structure
 
-```
+```text
 your-app/
 ├── frontend/           # React + Vite + TypeScript
 │   ├── src/
