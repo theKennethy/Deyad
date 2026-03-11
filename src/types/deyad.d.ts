@@ -183,6 +183,7 @@ interface DeyadAPI {
   deployCheck(): Promise<Record<string, boolean>>;
   deploy(appId: string, provider: 'netlify' | 'vercel' | 'surge'): Promise<{ success: boolean; url?: string; error?: string }>;
   deployFullstack(appId: string, provider: 'railway' | 'flyio'): Promise<{ success: boolean; url?: string; error?: string }>;
+  deployElectron(appId: string, platform?: 'linux' | 'win' | 'mac'): Promise<{ success: boolean; outputDir?: string; error?: string }>;
   onDeployLog(cb: (payload: { appId: string; data: string }) => void): () => void;
 
   // Plugins

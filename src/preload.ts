@@ -213,6 +213,9 @@ contextBridge.exposeInMainWorld('deyad', {
   deployFullstack: (appId: string, provider: 'railway' | 'flyio'): Promise<{ success: boolean; url?: string; error?: string }> =>
     ipcRenderer.invoke('apps:deploy-fullstack', appId, provider),
 
+  deployElectron: (appId: string, platform?: 'linux' | 'win' | 'mac'): Promise<{ success: boolean; outputDir?: string; error?: string }> =>
+    ipcRenderer.invoke('apps:deploy-electron', appId, platform),
+
   onDeployLog: (cb: (payload: { appId: string; data: string }) => void) => {
     const handler = (_: Electron.IpcRendererEvent, payload: { appId: string; data: string }) => cb(payload);
     ipcRenderer.on('apps:deploy-log', handler);

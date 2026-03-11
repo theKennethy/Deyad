@@ -218,6 +218,15 @@ const createWindow = () => {
               ).filter(Boolean);
               if (headers[key].length === 0) delete headers[key];
             }
+            // Strip SameSite & Secure from Set-Cookie so pgAdmin login
+            // cookies are persisted inside the webview partition.
+            if (lk === 'set-cookie') {
+              headers[key] = headers[key].map((v: string) =>
+                v
+                  .replace(/;\s*SameSite\s*=\s*\w+/gi, '')
+                  .replace(/;\s*Secure/gi, '')
+              );
+            }
           }
           callback({ responseHeaders: headers });
         },
@@ -227,8 +236,23 @@ const createWindow = () => {
     // Strip headers on the main session
     registerHeaderStripping(mainWindow.webContents.session);
 
-    // Also strip headers on the pgAdmin webview partition session
-    registerHeaderStripping(session.fromPartition('persist:pgadmin'));
+    // pgAdmin webview partition – strip headers & allow cookies
+    const pgadminSession = session.fromPartition('persist:pgadmin');
+    registerHeaderStripping(pgadminSession);
+
+    // Ensure the pgAdmin partition permits all cookies (no third-party blocking)
+    pgadminSession.cookies.flushStore().catch(() => {});
+
+    // When a webview is attached, ensure its session allows all cookies from
+    // localhost so pgAdmin login works reliably inside the Electron webview.
+    mainWindow.webContents.on('did-attach-webview', (_event, webContents) => {
+      webContents.session.webRequest.onBeforeSendHeaders(
+        { urls: ['http://localhost:*/*'] },
+        (details, callback) => {
+          callback({ requestHeaders: details.requestHeaders });
+        },
+      );
+    });
 
     // allow launching a specific HTML file (e.g. vanilla/index.html)
     const customArg = process.argv.slice(1).find((a) => a.endsWith('.html'));

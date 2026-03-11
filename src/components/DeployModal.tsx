@@ -42,6 +42,9 @@ export default function DeployModal({ appId, appName, appType, onClose }: Props)
   const [loadingDevices, setLoadingDevices] = useState(false);
   const [liveReload, setLiveReload] = useState(false);
   const [liveReloadActive, setLiveReloadActive] = useState(false);
+  const [desktopPlatform, setDesktopPlatform] = useState<'linux' | 'win' | 'mac'>('linux');
+  const [desktopWorking, setDesktopWorking] = useState(false);
+  const [desktopStatus, setDesktopStatus] = useState<string | null>(null);
 
   useEffect(() => {
     checkCLIs();
@@ -289,6 +292,48 @@ export default function DeployModal({ appId, appName, appType, onClose }: Props)
             </div>
 
             {mobileStatus && <div className="deploy-mobile-status">{mobileStatus}</div>}
+          </div>
+
+          {/* ── Desktop / Electron ──────────────────────────────────── */}
+          <div className="deploy-mobile-section">
+            <h3>Desktop (Electron + Ollama)</h3>
+            <p className="deploy-hint" style={{ margin: '0 0 8px' }}>
+              Package this app as a standalone desktop application with built-in Ollama AI support.
+            </p>
+
+            <div className="deploy-mobile-row">
+              <select
+                className="deploy-mobile-select"
+                value={desktopPlatform}
+                onChange={(e) => setDesktopPlatform(e.target.value as 'linux' | 'win' | 'mac')}
+                disabled={desktopWorking}
+              >
+                <option value="linux">Linux (AppImage)</option>
+                <option value="win">Windows (exe)</option>
+                <option value="mac">macOS (dmg)</option>
+              </select>
+
+              <button
+                className="btn-primary"
+                disabled={desktopWorking}
+                onClick={async () => {
+                  setDesktopWorking(true);
+                  setDesktopStatus('Building desktop app…');
+                  setLogs('');
+                  const res = await window.deyad.deployElectron(appId, desktopPlatform);
+                  if (res.success) {
+                    setDesktopStatus(`Desktop app built! Output: ${res.outputDir}`);
+                  } else {
+                    setDesktopStatus(`Build failed: ${res.error}`);
+                  }
+                  setDesktopWorking(false);
+                }}
+              >
+                {desktopWorking ? 'Building…' : 'Build Desktop App'}
+              </button>
+            </div>
+
+            {desktopStatus && <div className="deploy-mobile-status">{desktopStatus}</div>}
           </div>
 
           <div className="modal-actions">
