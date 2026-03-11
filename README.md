@@ -54,7 +54,9 @@ You describe your app in chat
 | Image → Code (vision models) | **Yes** | Yes | Yes | Yes | No | Yes |
 | Live preview | **Yes** | Yes | Yes | No | Yes | Yes |
 | Integrated terminal | **Yes** | Partial | No | Yes | No | No |
-| Deploy (5 targets) | **Yes** | Yes | Yes | No | Yes | Vercel only |
+| Deploy (6 cloud/hosting targets) | **Yes** | Yes | Yes | No | Yes | Vercel only |
+| Desktop app packaging (Electron) | **Yes** | No | No | No | No | No |
+| Built-in Ollama in packaged apps | **Yes** | No | No | No | No | No |
 | Mobile preview (Capacitor) | **Yes** | No | No | No | No | No |
 | Plugin system | **Yes** | No | No | Yes | No | No |
 | Works without internet | **Yes** | No | No | No | No | No |
@@ -109,7 +111,7 @@ You describe your app in chat
 
 ### Deployment
 
-Deploy to 5 targets directly from the app:
+Deploy to 6 targets directly from the app:
 
 | Provider | Type | Pricing |
 | --- | --- | --- |
@@ -118,7 +120,11 @@ Deploy to 5 targets directly from the app:
 | **Surge** | Static sites | Free |
 | **Railway** | Full-stack with database | Usage-based |
 | **Fly.io** | Container-based | Free tier |
+| **Electron Desktop** | Standalone desktop app (Linux/Win/Mac) | Free |
 
+- **Desktop packaging** — build a standalone Electron app with built-in Ollama AI bridge
+  - Generated apps ship with `window.ollama` API for chat, generate, model listing
+  - Targets: AppImage (Linux), exe/NSIS (Windows), DMG (macOS)
 - CLI auto-detection — shows which deploy tools are installed and ready
 - Streaming deploy logs in real-time
 - **ZIP export** — download your project as an archive
@@ -151,6 +157,7 @@ Drop custom templates into the `plugins/` directory with a `plugin.json` manifes
 | ORM | Prisma |
 | DB Admin | pgAdmin (latest) |
 | Version control | Git (auto-commit + GitHub push/pull/branches) |
+| Desktop deploy | Electron Builder (AppImage/exe/DMG) |
 | Testing | Vitest |
 
 ---

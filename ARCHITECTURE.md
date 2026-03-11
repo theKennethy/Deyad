@@ -36,7 +36,7 @@ src/
 ├── index.css                # Global + component styles
 ├── main/
 │   ├── ipcGit.ts            # Git/GitHub IPC handlers (11)
-│   ├── ipcDeploy.ts         # Deploy IPC handlers (3)
+│   ├── ipcDeploy.ts         # Deploy IPC handlers (4 incl. Electron desktop)
 │   └── ipcCapacitor.ts      # Mobile preview IPC handlers (5)
 ├── components/
 │   ├── ChatPanel.tsx         # AI chat (decomposed: ChatInput, MessageList, AgentStepsList)
@@ -48,7 +48,7 @@ src/
 │   ├── GitPanel.tsx          # GitHub remote, push/pull, branches
 │   ├── VersionHistoryPanel.tsx # Git log + file restore
 │   ├── DiffModal.tsx         # LCS-based diff viewer
-│   ├── DeployModal.tsx       # Deploy to Netlify/Vercel/Surge/Railway/Fly.io
+│   ├── DeployModal.tsx       # Deploy to Netlify/Vercel/Surge/Railway/Fly.io + Electron desktop
 │   ├── SettingsModal.tsx     # Ollama host, models, pgAdmin creds
 │   ├── EnvVarsPanel.tsx      # .env file editor
 │   ├── PackageManagerPanel.tsx # npm install/uninstall
@@ -80,7 +80,7 @@ src/
 
 All IPC uses `ipcMain.handle()` / `ipcRenderer.invoke()` (request-reply pattern). The preload script (`preload.ts`) exposes a typed `window.deyad` API via `contextBridge`.
 
-### Handler Groups (48 total)
+### Handler Groups (49 total)
 
 | Group | File | Count | Channels |
 |-------|------|-------|----------|
@@ -91,7 +91,7 @@ All IPC uses `ipcMain.handle()` / `ipcRenderer.invoke()` (request-reply pattern)
 | Env Vars | main.ts | 2 | env:read, env:write |
 | Terminal | main.ts | 3 | terminal:start, terminal:write, terminal:resize |
 | Git | ipcGit.ts | 11 | git:log/show/diff-stat/checkout, git:remote-get/set, git:push/pull, git:branch/branch-create/branch-switch |
-| Deploy | ipcDeploy.ts | 3 | apps:deploy-check, apps:deploy, apps:deploy-fullstack |
+| Deploy | ipcDeploy.ts | 4 | apps:deploy-check, apps:deploy, apps:deploy-fullstack, apps:deploy-electron |
 | Capacitor | ipcCapacitor.ts | 5 | apps:capacitor-init/open/list-devices/run/live-reload |
 
 ## Agent System
@@ -113,7 +113,8 @@ The agent loop streams Ollama responses, parses tool calls from markdown code bl
 - **Git hash validation**: Regex `^[0-9a-f]+$` prevents command injection
 - **Branch name validation**: Regex `^[a-zA-Z0-9._\-/]+$`
 - **Remote URL validation**: Must match `https?://` or `git@` patterns
-- **Header stripping**: X-Frame-Options and CSP stripped only for `localhost` URLs
+- **Header stripping**: X-Frame-Options, CSP, and SameSite/Secure cookies stripped only for `localhost` URLs
+- **Cookie handling**: `Set-Cookie` SameSite and Secure attributes stripped on pgAdmin partition for reliable webview login
 - **Webview isolation**: pgAdmin webview uses `partition="persist:pgadmin"`
 
 ## Tech Stack
@@ -128,9 +129,10 @@ The agent loop streams Ollama responses, parses tool calls from markdown code bl
 | AI | Ollama (local LLMs) |
 | Database | PostgreSQL 17 + pgAdmin (Docker) |
 | Mobile | Capacitor (Android/iOS) |
+| Desktop Deploy | Electron Builder (AppImage/exe/DMG with Ollama bridge) |
 | Version Control | git (local + GitHub) |
 | Testing | Vitest 3.2 + Testing Library |
-| Deploy | Netlify, Vercel, Surge, Railway, Fly.io |
+| Deploy | Netlify, Vercel, Surge, Railway, Fly.io, Electron Desktop |
 
 ## Build & Test
 
