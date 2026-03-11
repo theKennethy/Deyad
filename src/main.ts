@@ -120,12 +120,9 @@ const createWindow = () => {
           for (const key of Object.keys(headers)) {
             const lk = key.toLowerCase();
             if (lk === 'x-frame-options') delete headers[key];
-            if (lk === 'content-security-policy') {
-              headers[key] = headers[key].map((v: string) =>
-                v.replace(/frame-ancestors\s+[^;]+;?/gi, '').trim()
-              ).filter(Boolean);
-              if (headers[key].length === 0) delete headers[key];
-            }
+            // Fully remove CSP — pgAdmin's policy blocks inline scripts/styles
+            // needed for its own UI, causing a blank white screen in webviews.
+            if (lk === 'content-security-policy') delete headers[key];
             // Strip SameSite & Secure from Set-Cookie so pgAdmin login
             // cookies are persisted inside the webview partition.
             if (lk === 'set-cookie') {

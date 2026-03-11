@@ -597,6 +597,8 @@
 .db-gui-iframe {
   width: 100%;
   flex: 1;
+  min-height: 0;
+  height: 100%;
   border: none;
   background: #fff;
 }

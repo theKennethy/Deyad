@@ -120,6 +120,8 @@ export default function DatabasePanel({ app, dbStatus }: Props) {
                 src={guiUrl}
                 className="db-gui-iframe"
                 partition="persist:pgadmin"
+                // @ts-expect-error -- webview attributes not in React typings
+                allowpopups="true"
               />
             </>
           )}
