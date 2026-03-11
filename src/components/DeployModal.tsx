@@ -45,6 +45,12 @@ export default function DeployModal({ appId, appName, appType, onClose }: Props)
   const [desktopPlatform, setDesktopPlatform] = useState<'linux' | 'win' | 'mac'>('linux');
   const [desktopWorking, setDesktopWorking] = useState(false);
   const [desktopStatus, setDesktopStatus] = useState<string | null>(null);
+  const [vpsHost, setVpsHost] = useState('');
+  const [vpsUser, setVpsUser] = useState('');
+  const [vpsPath, setVpsPath] = useState('/var/www/html');
+  const [vpsPort, setVpsPort] = useState('22');
+  const [vpsWorking, setVpsWorking] = useState(false);
+  const [vpsStatus, setVpsStatus] = useState<string | null>(null);
 
   useEffect(() => {
     checkCLIs();
@@ -292,6 +298,79 @@ export default function DeployModal({ appId, appName, appType, onClose }: Props)
             </div>
 
             {mobileStatus && <div className="deploy-mobile-status">{mobileStatus}</div>}
+          </div>
+
+          {/* ── VPS (SSH + rsync) ───────────────────────────────────── */}
+          <div className="deploy-mobile-section">
+            <h3>VPS (SSH + rsync)</h3>
+            <p className="deploy-hint" style={{ margin: '0 0 8px' }}>
+              Deploy built files to any VPS via SSH. Requires rsync and SSH key auth.
+            </p>
+
+            <div className="deploy-mobile-row" style={{ gap: 6, flexWrap: 'wrap' }}>
+              <input
+                className="deploy-vps-input"
+                placeholder="user"
+                value={vpsUser}
+                onChange={(e) => setVpsUser(e.target.value)}
+                disabled={vpsWorking}
+                style={{ width: 80 }}
+              />
+              <span style={{ color: '#94a3b8' }}>@</span>
+              <input
+                className="deploy-vps-input"
+                placeholder="host or IP"
+                value={vpsHost}
+                onChange={(e) => setVpsHost(e.target.value)}
+                disabled={vpsWorking}
+                style={{ width: 140 }}
+              />
+              <span style={{ color: '#94a3b8' }}>:</span>
+              <input
+                className="deploy-vps-input"
+                placeholder="/var/www/html"
+                value={vpsPath}
+                onChange={(e) => setVpsPath(e.target.value)}
+                disabled={vpsWorking}
+                style={{ width: 150 }}
+              />
+              <input
+                className="deploy-vps-input"
+                placeholder="port"
+                value={vpsPort}
+                onChange={(e) => setVpsPort(e.target.value)}
+                disabled={vpsWorking}
+                style={{ width: 50 }}
+              />
+            </div>
+
+            <div className="deploy-mobile-row" style={{ marginTop: 6 }}>
+              <button
+                className="btn-primary"
+                disabled={vpsWorking || !vpsHost || !vpsUser}
+                onClick={async () => {
+                  setVpsWorking(true);
+                  setVpsStatus('Deploying to VPS…');
+                  setLogs('');
+                  const res = await window.deyad.deployVps(appId, {
+                    host: vpsHost,
+                    user: vpsUser,
+                    path: vpsPath,
+                    port: parseInt(vpsPort, 10) || 22,
+                  });
+                  if (res.success) {
+                    setVpsStatus(`Deployed! ${res.url}`);
+                  } else {
+                    setVpsStatus(`Failed: ${res.error}`);
+                  }
+                  setVpsWorking(false);
+                }}
+              >
+                {vpsWorking ? 'Deploying…' : 'Deploy to VPS'}
+              </button>
+            </div>
+
+            {vpsStatus && <div className="deploy-mobile-status">{vpsStatus}</div>}
           </div>
 
           {/* ── Desktop / Electron ──────────────────────────────────── */}

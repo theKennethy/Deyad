@@ -190,6 +190,64 @@ CMD ["node", "backend/src/index.js"]
     }
   });
 
+  // ── VPS Deploy (SSH + rsync) ─────────────────────────────────────────────
+  ipcMain.handle('apps:deploy-vps', async (event, appId: string, opts: { host: string; user: string; path: string; port?: number }) => {
+    const dir = appDir(appId);
+    if (!fs.existsSync(dir)) return { success: false, error: 'App directory not found' };
+
+    // Validate inputs
+    if (!opts.host || !opts.user || !opts.path) {
+      return { success: false, error: 'Host, user, and remote path are required' };
+    }
+    // Basic validation: no shell metacharacters in host/user/path
+    if (/[;&|`$(){}]/.test(opts.host + opts.user + opts.path)) {
+      return { success: false, error: 'Invalid characters in connection details' };
+    }
+
+    let appType = 'frontend';
+    try {
+      const meta = JSON.parse(fs.readFileSync(path.join(dir, 'deyad.json'), 'utf-8'));
+      appType = meta.appType || appType;
+    } catch { /* use default */ }
+
+    const win = BrowserWindow.fromWebContents(event.sender);
+    const sendLog = (msg: string) => win?.webContents.send('apps:deploy-log', { appId, data: msg });
+    const sshPort = String(opts.port || 22);
+
+    try {
+      // 1. Build
+      const webDir = appType === 'fullstack' ? path.join(dir, 'frontend') : dir;
+      sendLog('Building project…\n');
+      await spawnWithLogs('npx', ['vite', 'build'], { cwd: webDir, timeout: 120_000 }, sendLog);
+      sendLog('Build complete.\n');
+
+      const distDir = path.join(webDir, 'dist');
+      if (!fs.existsSync(distDir)) return { success: false, error: 'Build output (dist/) not found' };
+
+      // 2. rsync to VPS
+      const remoteDest = `${opts.user}@${opts.host}:${opts.path}`;
+      sendLog(`Uploading to ${remoteDest} via rsync…\n`);
+
+      const rsyncArgs = [
+        '-avz', '--delete',
+        '-e', `ssh -p ${sshPort} -o StrictHostKeyChecking=accept-new`,
+        distDir + '/',
+        remoteDest,
+      ];
+
+      const code = await spawnWithLogs('rsync', rsyncArgs, { cwd: dir, timeout: 300_000 }, sendLog);
+      if (code !== 0) return { success: false, error: `rsync exited with code ${code}` };
+
+      const url = `http://${opts.host}`;
+      sendLog(`\nDeployed to VPS! ${url}\n`);
+      return { success: true, url };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      sendLog(`\nVPS deploy failed: ${msg}\n`);
+      return { success: false, error: msg };
+    }
+  });
+
   // ── Electron Desktop Build ──────────────────────────────────────────────
   ipcMain.handle('apps:deploy-electron', async (event, appId: string, platform?: 'linux' | 'win' | 'mac') => {
     const dir = appDir(appId);

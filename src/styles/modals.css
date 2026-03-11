@@ -414,6 +414,16 @@
   border-radius: 6px;
   line-height: 1.4;
 }
+.deploy-vps-input {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+}
+.deploy-vps-input::placeholder { color: var(--text-muted); }
 
 
 /* ─── Task Queue Modal / Panel ───────────────────────────────────────────── */

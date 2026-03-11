@@ -185,6 +185,7 @@ interface DeyadAPI {
   deploy(appId: string, provider: 'netlify' | 'vercel' | 'surge'): Promise<{ success: boolean; url?: string; error?: string }>;
   deployFullstack(appId: string, provider: 'railway' | 'flyio'): Promise<{ success: boolean; url?: string; error?: string }>;
   deployElectron(appId: string, platform?: 'linux' | 'win' | 'mac'): Promise<{ success: boolean; outputDir?: string; error?: string }>;
+  deployVps(appId: string, opts: { host: string; user: string; path: string; port?: number }): Promise<{ success: boolean; url?: string; error?: string }>;
   onDeployLog(cb: (payload: { appId: string; data: string }) => void): () => void;
 
   // Plugins
