@@ -30,6 +30,7 @@ export interface DeyadSettings {
   hasCompletedWizard: boolean;
   pgAdminEmail: string;
   pgAdminPassword: string;
+  theme: 'dark' | 'light';
 }
 
 export const DEFAULT_SETTINGS: DeyadSettings = {
@@ -41,6 +42,7 @@ export const DEFAULT_SETTINGS: DeyadSettings = {
   hasCompletedWizard: false,
   pgAdminEmail: 'admin@admin.com',
   pgAdminPassword: 'admin',
+  theme: 'dark',
 };
 
 export function loadSettings(settingsPath: string): DeyadSettings {

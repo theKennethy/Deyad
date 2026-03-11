@@ -67,6 +67,7 @@ interface DeyadSettings {
   hasCompletedWizard: boolean;
   pgAdminEmail: string;
   pgAdminPassword: string;
+  theme: 'dark' | 'light';
 }
 
 interface GitLogEntry {

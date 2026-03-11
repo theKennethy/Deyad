@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 
 interface Props {
   onClose: () => void;
+  theme: 'dark' | 'light';
+  onThemeChange: (theme: 'dark' | 'light') => void;
 }
 
-export default function SettingsModal({ onClose }: Props) {
+export default function SettingsModal({ onClose, theme, onThemeChange }: Props) {
   const [ollamaHost, setOllamaHost] = useState('http://localhost:11434');
   const [defaultModel, setDefaultModel] = useState('');
   const [autocompleteEnabled, setAutocompleteEnabled] = useState(false);
@@ -51,6 +53,7 @@ export default function SettingsModal({ onClose }: Props) {
       embedModel,
       pgAdminEmail: pgAdminEmail.trim(),
       pgAdminPassword,
+      theme,
     });
     setSaving(false);
     setSaved(true);
@@ -87,6 +90,29 @@ export default function SettingsModal({ onClose }: Props) {
         </div>
 
         <div className="modal-body">
+          {/* ── Theme Toggle ──────────────────────────────────────── */}
+          <div className="form-field">
+            <label>Theme</label>
+            <div className="settings-theme-toggle">
+              <button
+                className={`btn-secondary settings-theme-btn ${theme === 'dark' ? 'active' : ''}`}
+                onClick={() => onThemeChange('dark')}
+                type="button"
+              >
+                🌙 Dark
+              </button>
+              <button
+                className={`btn-secondary settings-theme-btn ${theme === 'light' ? 'active' : ''}`}
+                onClick={() => onThemeChange('light')}
+                type="button"
+              >
+                ☀️ Light
+              </button>
+            </div>
+          </div>
+
+          <hr className="settings-divider" />
+
           <div className="form-field">
             <label htmlFor="ollama-host">Ollama Host URL</label>
             <div className="settings-host-row">

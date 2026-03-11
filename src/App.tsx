@@ -61,6 +61,9 @@ export default function App() {
   const [showWizard, setShowWizard] = useState(false);
   const [exportConfirm, setExportConfirm] = useState<{ open: boolean; appId: string }>({ open: false, appId: '' });
   const [exportResult, setExportResult] = useState<string | null>(null);
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    return (localStorage.getItem('deyad-theme') as 'dark' | 'light') || 'dark';
+  });
 
   // resizable panels (persist sizes in localStorage)
   const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
@@ -83,6 +86,10 @@ export default function App() {
       setAutocompleteEnabled(s.autocompleteEnabled ?? false);
       setCompletionModel(s.completionModel ?? '');
       setDefaultModel(s.defaultModel ?? '');
+      if (s.theme) {
+        setTheme(s.theme);
+        localStorage.setItem('deyad-theme', s.theme);
+      }
       if (!s.hasCompletedWizard) setShowWizard(true);
     }).catch((err) => console.warn('Failed to load settings:', err));
   }, []);
@@ -119,6 +126,12 @@ export default function App() {
     localStorage.setItem('rightWidth', rightWidth.toString());
     document.documentElement.style.setProperty('--editor-width', `${rightWidth}px`);
   }, [rightWidth]);
+
+  // Apply theme class to <html>
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('deyad-theme', theme);
+  }, [theme]);
 
   // Subscribe to DB status events
   useEffect(() => {
@@ -505,15 +518,20 @@ export default function App() {
       )}
 
       {showSettings && (
-        <SettingsModal onClose={() => {
-          setShowSettings(false);
-          // Reload settings to pick up autocomplete changes
-          window.deyad.getSettings().then((s) => {
-            setAutocompleteEnabled(s.autocompleteEnabled ?? false);
-            setCompletionModel(s.completionModel ?? '');
-            setDefaultModel(s.defaultModel ?? '');
-          }).catch(() => {});
-        }} />
+        <SettingsModal
+          theme={theme}
+          onThemeChange={setTheme}
+          onClose={() => {
+            setShowSettings(false);
+            // Reload settings to pick up autocomplete changes
+            window.deyad.getSettings().then((s) => {
+              setAutocompleteEnabled(s.autocompleteEnabled ?? false);
+              setCompletionModel(s.completionModel ?? '');
+              setDefaultModel(s.defaultModel ?? '');
+              if (s.theme) setTheme(s.theme);
+            }).catch(() => {});
+          }}
+        />
       )}
 
       {pendingDiffFiles && (

@@ -149,6 +149,23 @@
   border-top: 1px solid var(--border);
   margin: 12px 0;
 }
+.settings-theme-toggle {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.settings-theme-btn {
+  flex: 1;
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  transition: background 0.15s, border-color 0.15s;
+}
+.settings-theme-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
 .settings-toggle-label {
   display: flex;
   align-items: center;

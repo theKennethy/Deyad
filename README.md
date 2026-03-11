@@ -88,6 +88,7 @@ You describe your app in chat
 - **Package manager** — install/uninstall npm packages from the UI
 - **Environment variables** — multi-file `.env` editor
 - **Diff preview** — review AI changes before accepting, with snapshot-based undo
+- **Dark / Light theme** — user-selectable theme toggle in Settings, persisted across sessions
 
 ### Database
 
