@@ -169,19 +169,19 @@ describe('App component', () => {
     (window as any).deyad.listApps = vi.fn().mockResolvedValue([app]);
     (window as any).deyad.exportApp = vi.fn().mockResolvedValue({ success: true, path: '/tmp/mobile' });
 
-    // make confirm return true (mobile)
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
-
     render(<App />);
     // wait for sidebar entry to appear
     await screen.findByText('Export Test');
     // click the first Export button that shows up
     const exportBtns = screen.getAllByTitle('Export as ZIP');
     fireEvent.click(exportBtns[0]);
+    // ConfirmDialog appears – click "Mobile/PWA" to export as mobile
+    const mobileBtn = await screen.findByText('Mobile/PWA');
+    fireEvent.click(mobileBtn);
     await waitFor(() => expect(window.deyad.exportApp).toHaveBeenCalledWith('exp-app', 'mobile'));
   });
 
-  it('exports as zip when confirm returns false', async () => {
+  it('exports as zip when ZIP is chosen in dialog', async () => {
     const app = {
       id: 'exp-app2',
       name: 'Export Test 2',
@@ -191,12 +191,14 @@ describe('App component', () => {
     };
     (window as any).deyad.listApps = vi.fn().mockResolvedValue([app]);
     (window as any).deyad.exportApp = vi.fn().mockResolvedValue({ success: true, path: '/tmp/zip' });
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
 
     render(<App />);
     await screen.findByText('Export Test 2');
     const exportBtns2 = screen.getAllByTitle('Export as ZIP');
     fireEvent.click(exportBtns2[0]);
+    // ConfirmDialog appears – click "ZIP" to export as zip
+    const zipBtn = await screen.findByText('ZIP');
+    fireEvent.click(zipBtn);
     await waitFor(() => expect(window.deyad.exportApp).toHaveBeenCalledWith('exp-app2', 'zip'));
   });
 });

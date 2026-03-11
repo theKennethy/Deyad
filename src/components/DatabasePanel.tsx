@@ -119,6 +119,7 @@ export default function DatabasePanel({ app, dbStatus }: Props) {
                 key={`pgadmin-${dbStatus}`}
                 src={guiUrl}
                 className="db-gui-iframe"
+                partition="persist:pgadmin"
               />
             </>
           )}

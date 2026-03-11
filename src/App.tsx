@@ -16,6 +16,7 @@ import VersionHistoryPanel from './components/VersionHistoryPanel';
 import PackageManagerPanel from './components/PackageManagerPanel';
 import EnvVarsPanel from './components/EnvVarsPanel';
 import GitPanel from './components/GitPanel';
+import ConfirmDialog from './components/ConfirmDialog';
 import { taskQueue } from './lib/taskQueue';
 
 export interface AppProject {
@@ -58,6 +59,8 @@ export default function App() {
   const [completionModel, setCompletionModel] = useState('');
   const [defaultModel, setDefaultModel] = useState('');
   const [showWizard, setShowWizard] = useState(false);
+  const [exportConfirm, setExportConfirm] = useState<{ open: boolean; appId: string }>({ open: false, appId: '' });
+  const [exportResult, setExportResult] = useState<string | null>(null);
 
   // resizable panels (persist sizes in localStorage)
   const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
@@ -316,17 +319,17 @@ export default function App() {
   };
 
   const handleExportApp = async (appId: string) => {
-    // ask user whether they want a mobile/PWA export or a plain zip
-    const useMobile = window.confirm('Create mobile/PWA export? Press OK for mobile, Cancel for ZIP.');
-    const result = await window.deyad.exportApp(appId, useMobile ? 'mobile' : 'zip');
+    setExportConfirm({ open: true, appId });
+  };
+
+  const doExport = async (mobile: boolean) => {
+    const appId = exportConfirm.appId;
+    setExportConfirm({ open: false, appId: '' });
+    const result = await window.deyad.exportApp(appId, mobile ? 'mobile' : 'zip');
     if (result.success && result.path) {
-      if (typeof alert === 'function') {
-        alert(`${useMobile ? 'Mobile export created at' : 'Exported to'} ${result.path}`);
-      }
+      setExportResult(`${mobile ? 'Mobile export created at' : 'Exported to'} ${result.path}`);
     } else if (!result.success && result.error !== 'Cancelled') {
-      if (typeof alert === 'function') {
-        alert(`Export failed: ${result.error}`);
-      }
+      setExportResult(`Export failed: ${result.error}`);
     }
   };
 
@@ -602,6 +605,26 @@ export default function App() {
           onCreateApp={() => setShowNewAppModal(true)}
         />
       )}
+
+      <ConfirmDialog
+        open={exportConfirm.open}
+        title="Export App"
+        message="Create a mobile/PWA export or a plain ZIP?"
+        confirmLabel="Mobile/PWA"
+        cancelLabel="ZIP"
+        onConfirm={() => doExport(true)}
+        onCancel={() => doExport(false)}
+      />
+
+      <ConfirmDialog
+        open={!!exportResult}
+        title="Export"
+        message={exportResult || ''}
+        confirmLabel="OK"
+        cancelLabel=""
+        onConfirm={() => setExportResult(null)}
+        onCancel={() => setExportResult(null)}
+      />
     </div>
   );
 }

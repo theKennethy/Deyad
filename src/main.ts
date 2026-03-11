@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, net, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, net, session, shell } from 'electron';
 
 // Suppress GLib-GObject signal handler warnings on Linux (harmless Chromium/GTK noise)
 app.commandLine.appendSwitch('log-level', '3');
@@ -198,31 +198,37 @@ const createWindow = () => {
   // clear cache before loading to ensure latest CSS/JS is used
   mainWindow.webContents.session.clearCache().then(() => {
 
-    // Strip X-Frame-Options & CSP frame-ancestors from local DB admin tools
-    // so they can be embedded in iframes. Each app gets unique ports, so we
-    // match any localhost URL and strip framing headers broadly.
-    mainWindow.webContents.session.webRequest.onHeadersReceived(
-      (details, callback) => {
-        const url = details.url;
-        if (!url.startsWith('http://localhost:')) {
-          callback({ cancel: false });
-          return;
-        }
-        const headers = { ...details.responseHeaders };
-        for (const key of Object.keys(headers)) {
-          const lk = key.toLowerCase();
-          if (lk === 'x-frame-options') delete headers[key];
-          if (lk === 'content-security-policy') {
-            // Remove only the frame-ancestors directive, keep the rest
-            headers[key] = headers[key].map((v: string) =>
-              v.replace(/frame-ancestors\s+[^;]+;?/gi, '').trim()
-            ).filter(Boolean);
-            if (headers[key].length === 0) delete headers[key];
+    // Helper: register header stripping on a session so embedded webviews
+    // (pgAdmin etc.) can load without X-Frame-Options / CSP blocking.
+    const registerHeaderStripping = (ses: Electron.Session) => {
+      ses.webRequest.onHeadersReceived(
+        (details, callback) => {
+          const url = details.url;
+          if (!url.startsWith('http://localhost:')) {
+            callback({ cancel: false });
+            return;
           }
-        }
-        callback({ responseHeaders: headers });
-      },
-    );
+          const headers = { ...details.responseHeaders };
+          for (const key of Object.keys(headers)) {
+            const lk = key.toLowerCase();
+            if (lk === 'x-frame-options') delete headers[key];
+            if (lk === 'content-security-policy') {
+              headers[key] = headers[key].map((v: string) =>
+                v.replace(/frame-ancestors\s+[^;]+;?/gi, '').trim()
+              ).filter(Boolean);
+              if (headers[key].length === 0) delete headers[key];
+            }
+          }
+          callback({ responseHeaders: headers });
+        },
+      );
+    };
+
+    // Strip headers on the main session
+    registerHeaderStripping(mainWindow.webContents.session);
+
+    // Also strip headers on the pgAdmin webview partition session
+    registerHeaderStripping(session.fromPartition('persist:pgadmin'));
 
     // allow launching a specific HTML file (e.g. vanilla/index.html)
     const customArg = process.argv.slice(1).find((a) => a.endsWith('.html'));
