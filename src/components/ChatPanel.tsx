@@ -311,8 +311,16 @@ export default function ChatPanel({
       );
     });
 
-    const onDone = () => {
+    // Store cleanup so unmount can tear down listeners
+    const cleanup = () => {
+      unsubToken();
+      unsubDone();
+      unsubError();
       streamCleanupRef.current = null;
+    };
+
+    const onDone = () => {
+      cleanup();
       const finalContent = streamBuf.current;
 
       // Extract any generated files from the response
@@ -354,29 +362,18 @@ export default function ChatPanel({
     const unsubDone = window.deyad.onStreamDone(onDone);
 
     const unsubError = window.deyad.onStreamError((err: string) => {
-      streamCleanupRef.current = null;
+      cleanup();
       setError(`Ollama error: ${err}`);
       setStreaming(false);
     });
 
-    // Store cleanup so unmount can tear down listeners
-    const cleanup = () => {
-      unsubToken();
-      unsubDone();
-      unsubError();
-    };
     streamCleanupRef.current = cleanup;
 
-    try {
-      await window.deyad.chatStream(selectedModel, ollamaMessages);
-    } catch (err) {
+    window.deyad.chatStream(selectedModel, ollamaMessages).catch((err) => {
+      cleanup();
       setError(`Failed to connect to Ollama: ${err instanceof Error ? err.message : String(err)}`);
       setStreaming(false);
-    }
-
-    // Cleanup listeners once stream completes normally
-    cleanup();
-    streamCleanupRef.current = null;
+    });
   };
 
   const sendAgentMessage = async (overrideText?: string) => {
