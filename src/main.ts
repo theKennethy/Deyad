@@ -148,11 +148,14 @@ const createWindow = () => {
 
     // Helper: register header stripping on a session so embedded webviews
     // (pgAdmin etc.) can load without X-Frame-Options / CSP blocking.
+    // SECURITY: Only strips headers for localhost origins — external sites
+    // retain their full CSP and X-Frame-Options protections.
     const registerHeaderStripping = (ses: Electron.Session) => {
       ses.webRequest.onHeadersReceived(
+        { urls: ['http://localhost:*/*', 'http://127.0.0.1:*/*'] },
         (details, callback) => {
           const url = details.url;
-          if (!url.startsWith('http://localhost:')) {
+          if (!url.startsWith('http://localhost:') && !url.startsWith('http://127.0.0.1:')) {
             callback({ cancel: false });
             return;
           }

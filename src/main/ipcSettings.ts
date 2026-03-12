@@ -90,7 +90,7 @@ export function registerSettingsHandlers(
         dependencies: pkg.dependencies || {},
         devDependencies: pkg.devDependencies || {},
       };
-    } catch { return { dependencies: {}, devDependencies: {} }; }
+    } catch (err) { console.warn('Failed to parse package.json:', err); return { dependencies: {}, devDependencies: {} }; }
   });
 
   ipcMain.handle('npm:install', async (event, appId: string, packageName: string, isDev: boolean) => {

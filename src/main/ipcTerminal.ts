@@ -56,8 +56,7 @@ export function registerTerminalHandlers(appDir: (id: string) => string): void {
 
   ipcMain.handle('show-context-menu', (event, type?: 'terminal' | 'global') => {
     const { Menu } = require('electron');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const template: any[] = [
+    const template: Electron.MenuItemConstructorOptions[] = [
       { label: 'Cut', role: 'cut' },
       { label: 'Copy', role: 'copy' },
       { label: 'Paste', role: 'paste' },
@@ -69,6 +68,6 @@ export function registerTerminalHandlers(appDir: (id: string) => string): void {
       template.push({ label: 'Clear', click: () => event.sender.send('terminal:clear') });
     }
     const menu = Menu.buildFromTemplate(template);
-    menu.popup({ window: BrowserWindow.fromWebContents(event.sender) });
+    menu.popup({ window: BrowserWindow.fromWebContents(event.sender) ?? undefined });
   });
 }
