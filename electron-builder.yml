@@ -8,6 +8,17 @@ files:
   - "!node_modules/*/{CHANGELOG.md,README.md,*.d.ts}"
 npmRebuild: true
 nodeGypRebuild: false
+mac:
+  target:
+    - dmg
+    - zip
+  category: public.app-category.developer-tools
+  artifactName: "${productName}-${arch}.${ext}"
+  identity: null
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
 linux:
   target:
     - deb
@@ -20,6 +31,14 @@ win:
     - nsis
     - portable
   artifactName: "${productName}-${arch}.${ext}"
+  signingHashAlgorithms:
+    - sha256
+  sign: null
 nsis:
   oneClick: true
   allowToChangeInstallationDirectory: false
+afterSign: build/notarize.cjs
+publish:
+  provider: github
+  owner: theKennethy
+  repo: Deyad
