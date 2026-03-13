@@ -63,6 +63,8 @@ You describe your app in chat
 
 > **Why Ollama-only matters:** Every other AI app builder sends your code and prompts to a cloud API — you pay per token, you need an account, and your proprietary code leaves your machine. Deyad runs inference entirely on your hardware via Ollama. **Zero cloud dependency. Zero cost. Zero data leakage.**
 
+📄 **[Full comparison with Bolt.new, Lovable, Cursor, Windsurf, Replit, and v0 →](COMPARISON.md)**
+
 ---
 
 ## Features
