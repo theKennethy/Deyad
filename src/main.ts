@@ -1,4 +1,9 @@
 import { app, BrowserWindow, session, Menu, shell, dialog } from 'electron';
+import fixPath from 'fix-path';
+
+// Fix PATH so commands (docker, podman, node, npm, git, ollama) are found
+// when the app is launched from a desktop shortcut instead of a terminal.
+fixPath();
 
 // Suppress GLib-GObject signal handler warnings on Linux (harmless Chromium/GTK noise)
 app.commandLine.appendSwitch('log-level', '3');
