@@ -138,6 +138,7 @@ export function registerDockerHandlers(appDir: (id: string) => string): void {
   });
 
   ipcMain.handle('docker:port-check', (_event, port: number) => {
+    if (!Number.isInteger(port) || port < 1 || port > 65535) return Promise.resolve(false);
     return new Promise<boolean>((resolve) => {
       const sock = nodeNet.createConnection({ port, host: '127.0.0.1' });
       sock.once('connect', () => { sock.destroy(); resolve(true); });

@@ -96,7 +96,7 @@ export function registerGitHandlers(appDir: (id: string) => string): void {
   ipcMain.handle('git:checkout', async (_event, appId: string, hash: string) => {
     const dir = appDir(appId);
     if (!fs.existsSync(path.join(dir, '.git'))) return { success: false, error: 'No git repo' };
-    if (!/^[0-9a-f]+$/i.test(hash)) return { success: false, error: 'Invalid hash' };
+    if (!/^[0-9a-f]{6,40}$/i.test(hash)) return { success: false, error: 'Invalid hash' };
     try {
       await execFileAsync('git', ['checkout', hash, '--', '.'], { cwd: dir, timeout: 10000 });
       return { success: true };

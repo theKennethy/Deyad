@@ -59,7 +59,6 @@ export default function TerminalPanel({ appId }: Props) {
     wrapper.style.width = '100%';
     wrapper.style.height = '100%';
     wrapper.style.display = 'none';
-    wrapper.dataset.termTab = 'true';
     containerRef.current.appendChild(wrapper);
 
     term.open(wrapper);
@@ -92,6 +91,9 @@ export default function TerminalPanel({ appId }: Props) {
       fit,
     };
 
+    // Tag wrapper with tab id for reliable DOM lookup
+    wrapper.dataset.termTab = tab.id;
+
     setTabs(prev => [...prev, tab]);
     setActiveId(tab.id);
   }, [appId]);
@@ -107,9 +109,8 @@ export default function TerminalPanel({ appId }: Props) {
   // show/hide terminal DOM wrappers + fit when active tab changes
   useEffect(() => {
     if (!containerRef.current) return;
-    const wrappers = containerRef.current.querySelectorAll<HTMLDivElement>('[data-term-tab]');
-    tabs.forEach((tab, i) => {
-      const wrapper = wrappers[i];
+    tabs.forEach((tab) => {
+      const wrapper = containerRef.current!.querySelector<HTMLDivElement>(`[data-term-tab="${tab.id}"]`);
       if (!wrapper) return;
       if (tab.id === activeId) {
         wrapper.style.display = 'block';
@@ -168,9 +169,8 @@ export default function TerminalPanel({ appId }: Props) {
 
     // remove the DOM wrapper
     if (containerRef.current) {
-      const wrappers = containerRef.current.querySelectorAll<HTMLDivElement>('[data-term-tab]');
-      const idx = tabsRef.current.findIndex(t => t.id === tabId);
-      if (wrappers[idx]) wrappers[idx].remove();
+      const wrapper = containerRef.current.querySelector<HTMLDivElement>(`[data-term-tab="${tabId}"]`);
+      if (wrapper) wrapper.remove();
     }
 
     setTabs(prev => {

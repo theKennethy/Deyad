@@ -23,7 +23,12 @@ export function registerTerminalHandlers(appDir: (id: string) => string): void {
     }
     const cwd = appId ? appDir(appId) : undefined;
     const shellPath = process.platform === 'win32' ? 'cmd.exe' : process.env.SHELL || '/bin/bash';
-    const term = pty.spawn(shellPath, [], { cwd, env: process.env });
+    let term;
+    try {
+      term = pty.spawn(shellPath, [], { cwd, env: process.env });
+    } catch (spawnErr) {
+      throw new Error(`Failed to spawn terminal: ${spawnErr instanceof Error ? spawnErr.message : String(spawnErr)}`);
+    }
     const id = uuidv4();
     terminals.set(id, term);
 

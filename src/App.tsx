@@ -156,33 +156,42 @@ export default function App() {
     // Always show the file editor when switching apps — the preview iframe always
     // points to localhost:5173 so it could show a stale/different app's preview.
     setRightTab('editor');
-    const files = await window.deyad.readFiles(app.id);
-    setAppFiles(files);
+    try {
+      const files = await window.deyad.readFiles(app.id);
+      setAppFiles(files);
 
-    // Check undo availability
-    const hasSnap = await window.deyad.hasSnapshot(app.id);
-    setCanRevert(hasSnap);
+      // Check undo availability
+      const hasSnap = await window.deyad.hasSnapshot(app.id);
+      setCanRevert(hasSnap);
 
-    // Check DB status for full-stack apps
-    if (app.appType === 'fullstack') {
-      const { status } = await window.deyad.dbStatus(app.id);
-      setDbStatus(status);
-    } else {
-      setDbStatus('none');
+      // Check DB status for full-stack apps
+      if (app.appType === 'fullstack') {
+        const { status } = await window.deyad.dbStatus(app.id);
+        setDbStatus(status);
+      } else {
+        setDbStatus('none');
+      }
+    } catch (err) {
+      console.error('Failed to load app:', err);
+      setAppFiles({});
+      setCanRevert(false);
     }
   }, []);
 
   const handleFilesUpdated = useCallback(async (newFiles: Record<string, string>) => {
     if (!selectedApp) return;
-    // Show diff preview before applying (unless in agent mode which auto-applies)
-    setPendingDiffFiles(newFiles);
+    // Accumulate files so multi-step agent writes don't overwrite earlier batches
+    setPendingDiffFiles((prev) => (prev ? { ...prev, ...newFiles } : newFiles));
   }, [selectedApp]);
 
   const handleApplyDiff = useCallback(async () => {
     if (!selectedApp || !pendingDiffFiles) return;
     await window.deyad.snapshotFiles(selectedApp.id, appFiles);
     await window.deyad.writeFiles(selectedApp.id, pendingDiffFiles);
-    setAppFiles((prev) => ({ ...prev, ...pendingDiffFiles }));
+    // Re-read all files from disk to catch any agent writes that were
+    // overwritten in pendingDiffFiles (multi-step agent loop)
+    const freshFiles = await window.deyad.readFiles(selectedApp.id);
+    setAppFiles(freshFiles);
     setCanRevert(true);
     const firstKey = Object.keys(pendingDiffFiles)[0];
     if (firstKey) setSelectedFile(firstKey);
@@ -291,6 +300,9 @@ export default function App() {
       setSelectedApp(null);
       setAppFiles({});
       setSelectedFile(null);
+      setPendingDiffFiles(null);
+      setCanRevert(false);
+      setDbStatus('none');
     }
     await loadApps();
   };
