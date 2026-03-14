@@ -304,30 +304,6 @@ npm install
 npm start
 ```
 
-### macOS
-
-```bash
-# 1. Install Homebrew (if not already)
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-# 2. Node.js + Git
-brew install node git
-
-# 3. Ollama — download from https://ollama.com/download/mac
-#    Or via brew:
-brew install ollama
-ollama pull llama3.2
-
-# 4. Docker Desktop (for full-stack / database apps)
-brew install --cask docker
-
-# 5. Install & run Deyad from source
-git clone https://github.com/theKennethy/Deyad.git
-cd Deyad && npm install && npm start
-```
-
-> **Note:** macOS builds (DMG) are not yet available in GitHub Releases. Run from source or build locally with `npm run dist`.
-
 ---
 
 ## Verify Your Setup
