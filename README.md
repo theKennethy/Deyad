@@ -174,12 +174,175 @@ Drop custom templates into the `plugins/` directory with a `plugin.json` manifes
 
 ## Requirements
 
-| Requirement | Why | Required? |
+### Core (all platforms)
+
+| Dependency | Why | Required? |
 | --- | --- | --- |
-| [Node.js >= 18](https://nodejs.org) | Run the app | Yes |
-| [Ollama](https://ollama.ai) | Local AI inference | Yes |
-| [Docker](https://docker.com) or [Podman](https://podman.io) | Database containers | For full-stack apps |
-| [Git](https://git-scm.com) | Auto version control | Recommended |
+| [Node.js >= 18](https://nodejs.org) (with npm) | Runs generated apps, installs packages, Vite dev server | **Yes** |
+| [Ollama](https://ollama.ai) | Local AI inference — the entire app depends on this | **Yes** |
+| [Git](https://git-scm.com) | Auto-commit, version history, GitHub push/pull | **Yes** |
+| [Docker](https://docker.com) or [Podman](https://podman.io) | PostgreSQL + pgAdmin containers | **Full-stack only** |
+
+### Optional (install when needed)
+
+| Feature | Dependency | Install |
+| --- | --- | --- |
+| Deploy to Netlify | Netlify CLI | `npm i -g netlify-cli` |
+| Deploy to Vercel | Vercel CLI | `npm i -g vercel` |
+| Deploy to Surge | Surge CLI | `npm i -g surge` |
+| Deploy to Railway | Railway CLI | `npm i -g @railway/cli` |
+| Deploy to Fly.io | Fly CLI | [fly.io/docs/getting-started/installing-flyctl](https://fly.io/docs/getting-started/installing-flyctl/) |
+| VPS Deploy | rsync + SSH | Usually pre-installed on Linux/macOS |
+| Mobile (Android) | Android SDK | Via [Android Studio](https://developer.android.com/studio) |
+| Mobile (iOS) | Xcode | macOS App Store (macOS only) |
+
+---
+
+## Installation by Platform
+
+### Ubuntu / Debian
+
+```bash
+# 1. Node.js 20 (via NodeSource)
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# 2. Git
+sudo apt install -y git
+
+# 3. Ollama
+curl -fsSL https://ollama.com/install.sh | sh
+ollama pull llama3.2
+
+# 4. Podman (for full-stack / database apps)
+sudo apt install -y podman
+
+# 5. Install & run Deyad
+# Option A: Download the .deb from GitHub Releases
+sudo dpkg -i Deyad-amd64.deb
+
+# Option B: Run from source
+git clone https://github.com/theKennethy/Deyad.git
+cd Deyad && npm install && npm start
+```
+
+### Fedora / RHEL / CentOS
+
+```bash
+# 1. Node.js 20 (via NodeSource)
+curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
+sudo dnf install -y nodejs
+
+# 2. Git
+sudo dnf install -y git
+
+# 3. Ollama
+curl -fsSL https://ollama.com/install.sh | sh
+ollama pull llama3.2
+
+# 4. Podman (for full-stack / database apps)
+sudo dnf install -y podman
+
+# 5. Install & run Deyad
+# Option A: Download the .rpm from GitHub Releases
+sudo rpm -i Deyad-x86_64.rpm
+
+# Option B: Run from source
+git clone https://github.com/theKennethy/Deyad.git
+cd Deyad && npm install && npm start
+```
+
+### Arch Linux / Manjaro
+
+```bash
+# 1. Node.js + npm + Git
+sudo pacman -S nodejs npm git
+
+# 2. Ollama
+curl -fsSL https://ollama.com/install.sh | sh
+ollama pull llama3.2
+
+# 3. Podman (for full-stack / database apps)
+sudo pacman -S podman
+
+# 4. Install & run Deyad
+# Option A: Download the AppImage from GitHub Releases
+chmod +x Deyad-x86_64.AppImage && ./Deyad-x86_64.AppImage
+
+# Option B: Run from source
+git clone https://github.com/theKennethy/Deyad.git
+cd Deyad && npm install && npm start
+```
+
+### Windows 10/11
+
+```powershell
+# 1. Node.js — download the installer from https://nodejs.org (LTS)
+#    Or via winget:
+winget install OpenJS.NodeJS.LTS
+
+# 2. Git — download from https://git-scm.com/download/win
+#    Or via winget:
+winget install Git.Git
+
+# 3. Ollama — download from https://ollama.com/download/windows
+#    Or via winget:
+winget install Ollama.Ollama
+ollama pull llama3.2
+
+# 4. Docker Desktop (for full-stack / database apps)
+#    Download from https://docker.com/products/docker-desktop
+#    Or via winget:
+winget install Docker.DockerDesktop
+
+# 5. Install & run Deyad
+# Option A: Download Deyad-x64.exe from GitHub Releases and run the installer
+# Option B: Run from source
+git clone https://github.com/theKennethy/Deyad.git
+cd Deyad
+npm install
+npm start
+```
+
+### macOS
+
+```bash
+# 1. Install Homebrew (if not already)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# 2. Node.js + Git
+brew install node git
+
+# 3. Ollama — download from https://ollama.com/download/mac
+#    Or via brew:
+brew install ollama
+ollama pull llama3.2
+
+# 4. Docker Desktop (for full-stack / database apps)
+brew install --cask docker
+
+# 5. Install & run Deyad from source
+git clone https://github.com/theKennethy/Deyad.git
+cd Deyad && npm install && npm start
+```
+
+> **Note:** macOS builds (DMG) are not yet available in GitHub Releases. Run from source or build locally with `npm run dist`.
+
+---
+
+## Verify Your Setup
+
+After installing, verify everything is ready:
+
+```bash
+node --version      # Should be >= 18
+npm --version       # Should be >= 9
+git --version       # Any recent version
+ollama --version    # Should respond (ensure ollama serve is running)
+
+# Optional — only needed for full-stack apps:
+docker --version    # or: podman --version
+```
 
 ---
 
